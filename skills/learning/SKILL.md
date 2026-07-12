@@ -1,49 +1,13 @@
 ---
 name: learning
-description: セッション観察で蓄積された Instinct の確認と昇格を行う。「/learning status」「instinct の一覧」「学習状況を見せて」で status を、「/learning review」「instinct を昇格」「学習内容をレビュー」で review を実行する。
-allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.learning/instincts/**), Edit(.claude/rules/**), Edit(.claude/skills/**), Edit(.claude/agents/**), Edit(CLAUDE.md), Write(.claude/rules/**), Write(.claude/skills/**), Write(.claude/agents/**)
+description: セッション観察で蓄積された Instinct の確認と昇格を行う。「instinct の一覧」「学習状況を見せて」で status を、「instinct を昇格」「学習内容をレビュー」で review を実行する。
+allowed-tools: SlashCommand(/learning:status), SlashCommand(/learning:review)
 argument-hint: "[status|review]"
 ---
 
 # learning - Instinct の管理と昇格
 
-蓄積された Instinct（プロジェクト直下の `.learning/instincts/*.md`）を確認し、信頼度が閾値に達したものをユーザー承認のもとで昇格させる skill。
+実際の手順はコマンド側（`commands/status.md`, `commands/review.md`）にある。この skill は自然言語での呼びかけを対応するコマンドへ振り分けるだけ。
 
-実行するサブコマンド: `$ARGUMENTS`（空の場合は `status` を実行する）
-
-## 共通の前提
-
-- Instinct ファイルの frontmatter: `id`, `type`(correction|error-solution|workflow), `status`(active|promoted|rejected), `confidence`, `evidence_count`, `promote_to`(rules|instructions|skill|agent), `created`, `updated`
-- 昇格資格: `status: active` かつ `confidence >= 0.7`
-- instincts ディレクトリが存在しない・空の場合は「まだ Instinct が蓄積されていません。セッションを重ねると自動的に蓄積されます」と report して終了する
-
-## /learning status
-
-読み取り専用。`.learning/instincts/*.md` の frontmatter を集めて次の形式で表示する:
-
-| id | type | confidence | evidence | status |
-|---|---|---|---|---|
-| use-uv-not-pip | correction | 0.7 | 3 | active |
-
-表の後に「昇格資格あり: N 件（/learning review で提案を確認できます）」を添える。ファイル編集は一切しない。
-
-## /learning review
-
-1. `status: active` かつ `confidence >= 0.7` の Instinct を収集する。0 件なら「昇格資格のある Instinct はありません」と現在の最高 confidence を添えて終了する
-2. 各 Instinct について昇格先を決定する。frontmatter の `promote_to` を初期値とし、内容から見て不適切なら変更する:
-   - `instructions` → プロジェクトの `CLAUDE.md` に規則として追記（該当セクションがなければ末尾に追加）
-   - `rules` → .claude/rules/<id>.md` としてパスごとのルール定義を新規作成
-   - `skill` → 既存 skill の手順改善、または `.claude/skills/<id>/SKILL.md` の新規作成
-   - `agent` → `.claude/agents/<id>.md` としてサブエージェント定義を新規作成
-3. 昇格先ファイルの現状を読み、具体的な変更案（diff 形式または新規ファイル全文）を作る
-4. **1件ずつ** AskUserQuestion で提示し、承認 / 却下 / 保留 を確認する。質問文には Instinct の Trigger/Action、evidence_count、変更案の要約を含める
-   - **承認** → 変更を適用し、Instinct の frontmatter を `status: promoted` に更新、`promoted_to: <適用先パス>` を追記する
-   - **却下** → `status: rejected` に更新する（observer が同種を再作成しなくなる）
-   - **保留** → 何も変更しない（次回の review に持ち越し）
-5. 全件処理後、適用結果のサマリ（承認/却下/保留の件数と適用先パス）を表示する
-
-## 制約
-
-- ユーザーの承認なしに昇格先ファイルを変更しない
-- 一度の承認で複数の Instinct をまとめて適用しない（1件ずつ確認する）
-- instincts ファイルの confidence や evidence を手動で書き換えない（それは observer の仕事）
+- `$ARGUMENTS` が `review`、またはユーザーの意図が昇格レビューなら → SlashCommand ツールで `/learning:review` を実行する
+- それ以外（空・`status`・一覧確認の意図）→ SlashCommand ツールで `/learning:status` を実行する
