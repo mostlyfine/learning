@@ -1,11 +1,15 @@
 ---
 name: learning
 description: セッション観察で蓄積された Instinct の確認と昇格を行う。「/learning status」「instinct の一覧」「学習状況を見せて」で status を、「/learning review」「instinct を昇格」「学習内容をレビュー」で review を実行する。
+allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.learning/instincts/**), Edit(.claude/rules/**), Edit(.claude/skills/**), Edit(.claude/agents/**), Edit(CLAUDE.md), Write(.claude/rules/**), Write(.claude/skills/**), Write(.claude/agents/**)
+argument-hint: "[status|review]"
 ---
 
 # learning - Instinct の管理と昇格
 
-蓄積された Instinct（プロジェクト直下の `.learning/instincts/*.md`）を確認し、信頼度が閾値に達したものをユーザー承認のもとで昇格させる skill。サブコマンドは引数で指定される（既定は `status`）。
+蓄積された Instinct（プロジェクト直下の `.learning/instincts/*.md`）を確認し、信頼度が閾値に達したものをユーザー承認のもとで昇格させる skill。
+
+実行するサブコマンド: `$ARGUMENTS`（空の場合は `status` を実行する）
 
 ## 共通の前提
 
@@ -27,8 +31,8 @@ description: セッション観察で蓄積された Instinct の確認と昇格
 
 1. `status: active` かつ `confidence >= 0.7` の Instinct を収集する。0 件なら「昇格資格のある Instinct はありません」と現在の最高 confidence を添えて終了する
 2. 各 Instinct について昇格先を決定する。frontmatter の `promote_to` を初期値とし、内容から見て不適切なら変更する:
-   - `rules` → プロジェクトの `CLAUDE.md` に規則として追記（該当セクションがなければ末尾に追加）
-   - `instructions` → 関連する既存 skill の `SKILL.md` にトラブルシュート・注意点として追記
+   - `instructions` → プロジェクトの `CLAUDE.md` に規則として追記（該当セクションがなければ末尾に追加）
+   - `rules` → .claude/rules/<id>.md` としてパスごとのルール定義を新規作成
    - `skill` → 既存 skill の手順改善、または `.claude/skills/<id>/SKILL.md` の新規作成
    - `agent` → `.claude/agents/<id>.md` としてサブエージェント定義を新規作成
 3. 昇格先ファイルの現状を読み、具体的な変更案（diff 形式または新規ファイル全文）を作る
