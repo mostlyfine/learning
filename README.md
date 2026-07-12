@@ -36,8 +36,6 @@ Claude Code 内で以下を実行する:
 - `/learning:status` — Instinct の一覧と昇格資格の確認
 - `/learning:review` — 昇格提案を 1 件ずつ承認 / 却下 / 保留
 
-手順の実体は `commands/status.md` `commands/review.md` にある。`skills/learning/SKILL.md` は「学習状況を見せて」等の自然言語での呼びかけを対応するコマンドへ振り分けるルーター。
-
 ## 設定（環境変数）
 
 | 変数 | 既定 | 意味 |

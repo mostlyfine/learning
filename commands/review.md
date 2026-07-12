@@ -15,7 +15,7 @@ allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.learning/instincts/**), 
 
 ## 手順
 
-1. `status: active` かつ `confidence >= 0.7` の Instinct を収集する。0 件なら「昇格資格のある Instinct はありません」と現在の最高 confidence を添えて終了する
+1. 昇格資格（前提を参照）を満たす Instinct を収集する。0 件なら「昇格資格のある Instinct はありません」と現在の最高 confidence を添えて終了する
 2. 各 Instinct について昇格先を決定する。frontmatter の `promote_to` を初期値とし、内容から見て不適切なら変更する:
    - `instructions` → プロジェクトの `CLAUDE.md` に規則として追記（該当セクションがなければ末尾に追加）
    - `rules` → `.claude/rules/<id>.md` としてパスごとのルール定義を新規作成
