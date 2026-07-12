@@ -72,6 +72,7 @@ stdin の hook JSON（`transcript_path`, `cwd`, `reason`）を受け取り、ガ
 - `LEARNING_SKILLS_OBSERVER=1` を付与して `claude -p` を起動。プロンプトは `prompts/observer.md` の内容に transcript パスと instincts ディレクトリパスを埋め込む。
 - モデルは既定 haiku。環境変数 `LEARNING_SKILLS_MODEL` で上書き可能。
 - `trap` でロック解放を保証。
+- observer に許可するツールは `Read,Glob,Grep` に加え `Write`/`Edit` を `.claude/skills/learning/instincts/**` に限定する（プロンプトインジェクション対策: transcript 由来の指示が instincts 外のファイルを書き換えられないようにする）。
 
 ### observer の仕事（prompts/observer.md）
 
