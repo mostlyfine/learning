@@ -8,7 +8,7 @@ Claude Code のセッションを自動観察し、行動パターンを Instinc
 SessionEnd hook → ガード判定 → claude -p (haiku) で transcript を分析
   → .learning/instincts/*.md に蓄積（confidence 0.3 から開始）
   → 別セッションで再観察されるたび +0.2
-  → 0.7 以上で /learning review の昇格提案対象に
+  → 0.7 以上で /learning:review の昇格提案対象に
 ```
 
 昇格はすべてユーザー承認制。蓄積中の Instinct がセッションの挙動に影響することはない。
@@ -22,7 +22,7 @@ Claude Code 内で以下を実行する:
 /plugin install learning@learning-skills
 ```
 
-インストールすると skill（`/learning:learning`）と SessionEnd hook（セッション観察）が自動で有効になる。手動セットアップは不要。
+インストールすると command（`/learning:status`, `/learning:review`）、skill（自然言語トリガー用）、SessionEnd hook（セッション観察）が自動で有効になる。手動セットアップは不要。
 
 依存: bash, jq, claude CLI
 
@@ -33,8 +33,10 @@ Claude Code 内で以下を実行する:
 ## 使い方
 
 - 蓄積は自動（10 ターン以上のセッション終了時に分析が走る）
-- `/learning:learning status` — Instinct の一覧と昇格資格の確認
-- `/learning:learning review` — 昇格提案を 1 件ずつ承認 / 却下 / 保留
+- `/learning:status` — Instinct の一覧と昇格資格の確認
+- `/learning:review` — 昇格提案を 1 件ずつ承認 / 却下 / 保留
+
+手順の実体は `commands/status.md` `commands/review.md` にある。`skills/learning/SKILL.md` は「学習状況を見せて」等の自然言語での呼びかけを対応するコマンドへ振り分けるルーター。
 
 ## 設定（環境変数）
 
