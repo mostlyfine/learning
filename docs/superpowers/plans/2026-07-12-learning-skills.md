@@ -265,7 +265,7 @@ Claude-Session: https://claude.ai/code/session_01LWvko5t2KQ1Y3nhmSJSTcK"
 
 **Interfaces:**
 - Consumes: 引数 `$1`=transcript_path, `$2`=project_dir（Task 1 の起動規約）、`../prompts/observer.md`（プレースホルダ `{{TRANSCRIPT_PATH}}` `{{INSTINCTS_DIR}}` `{{TODAY}}` を含むテキスト。実物は Task 3 で作成、テストではフィクスチャを使用）、`../.lock`（Task 1 が作成）
-- Produces: `claude -p <prompt> --model <model> --allowedTools "Read,Write,Edit,Glob,Grep"` の呼び出し（環境変数 `LEARNING_SKILLS_OBSERVER=1` 付き）、終了時の `.lock` 削除、`instincts/` ディレクトリ作成
+- Produces: `claude -p <prompt> --model <model> --allowedTools "Read,Glob,Grep,Write(.claude/skills/learning/instincts/**),Edit(.claude/skills/learning/instincts/**)"` の呼び出し（環境変数 `LEARNING_SKILLS_OBSERVER=1` 付き）、終了時の `.lock` 削除、`instincts/` ディレクトリ作成
 
 - [ ] **Step 1: 失敗するテストを書く**
 
@@ -314,7 +314,7 @@ arg_after() {
   [ "$status" -eq 0 ]
   grep -qx -- "-p" "$TMP/claude-args.txt"
   [ "$(arg_after --model)" = "haiku" ]
-  [ "$(arg_after --allowedTools)" = "Read,Write,Edit,Glob,Grep" ]
+  [ "$(arg_after --allowedTools)" = "Read,Glob,Grep,Write(.claude/skills/learning/instincts/**),Edit(.claude/skills/learning/instincts/**)" ]
 }
 
 @test "LEARNING_SKILLS_MODEL でモデルを上書きできる" {
@@ -392,7 +392,7 @@ model="${LEARNING_SKILLS_MODEL:-haiku}"
 
 cd "$project_dir" || exit 0
 if ! LEARNING_SKILLS_OBSERVER=1 claude -p "$prompt" --model "$model" \
-    --allowedTools "Read,Write,Edit,Glob,Grep"; then
+    --allowedTools "Read,Glob,Grep,Write(.claude/skills/learning/instincts/**),Edit(.claude/skills/learning/instincts/**)"; then
   echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] observer failed: transcript=$transcript_path"
 fi
 exit 0

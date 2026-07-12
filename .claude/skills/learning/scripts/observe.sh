@@ -15,7 +15,13 @@ project_dir="${2:?project dir required}"
 instincts_dir="$base_dir/instincts"
 mkdir -p "$instincts_dir"
 
-prompt=$(<"$base_dir/prompts/observer.md")
+prompt_file="$base_dir/prompts/observer.md"
+if [ ! -f "$prompt_file" ]; then
+  echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] observer prompt missing: $prompt_file"
+  exit 0
+fi
+
+prompt=$(<"$prompt_file")
 prompt="${prompt//\{\{TRANSCRIPT_PATH\}\}/$transcript_path}"
 prompt="${prompt//\{\{INSTINCTS_DIR\}\}/$instincts_dir}"
 prompt="${prompt//\{\{TODAY\}\}/$(date +%F)}"
@@ -24,7 +30,7 @@ model="${LEARNING_SKILLS_MODEL:-haiku}"
 
 cd "$project_dir" || exit 0
 if ! LEARNING_SKILLS_OBSERVER=1 claude -p "$prompt" --model "$model" \
-    --allowedTools "Read,Write,Edit,Glob,Grep"; then
+    --allowedTools "Read,Glob,Grep,Write(.claude/skills/learning/instincts/**),Edit(.claude/skills/learning/instincts/**)"; then
   echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] observer failed: transcript=$transcript_path"
 fi
 exit 0

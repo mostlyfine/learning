@@ -20,6 +20,7 @@ date +%s >"$project/.claude/skills/learning/.lock"
 
 echo "=== 生成された Instinct ==="
 ls -la "$project/.claude/skills/learning/instincts/" || true
+shopt -s nullglob
 for f in "$project/.claude/skills/learning/instincts/"*.md; do
   echo "--- $f ---"
   cat "$f"

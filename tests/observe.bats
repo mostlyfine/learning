@@ -40,7 +40,7 @@ arg_after() {
   [ "$status" -eq 0 ]
   grep -qx -- "-p" "$TMP/claude-args.txt"
   [ "$(arg_after --model)" = "haiku" ]
-  [ "$(arg_after --allowedTools)" = "Read,Write,Edit,Glob,Grep" ]
+  [ "$(arg_after --allowedTools)" = "Read,Glob,Grep,Write(.claude/skills/learning/instincts/**),Edit(.claude/skills/learning/instincts/**)" ]
 }
 
 @test "LEARNING_SKILLS_MODEL でモデルを上書きできる" {
@@ -79,4 +79,13 @@ arg_after() {
   [ "$status" -eq 0 ]
   [ ! -f "$LEARNING/.lock" ]
   [[ "$output" == *"observer failed"* ]]
+}
+
+@test "プロンプトファイルが存在しない場合は claude を起動せずロックを削除する" {
+  rm -f "$LEARNING/prompts/observer.md"
+  run_observe
+  [ "$status" -eq 0 ]
+  [ ! -f "$TMP/claude-args.txt" ]
+  [ ! -f "$LEARNING/.lock" ]
+  [[ "$output" == *"observer prompt missing"* ]]
 }
