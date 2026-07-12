@@ -26,10 +26,11 @@ main() {
     "$transcript_path" 2>/dev/null | wc -l | tr -d ' ')
   [ "${turns:-0}" -ge "$MIN_TURNS" ] || return 0
 
-  local script_dir base_dir lock_file now
+  # ランタイムデータは .claude 外に置く（headless の claude は .claude 配下に書き込めない）
+  local script_dir data_dir lock_file now
   script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-  base_dir=$(cd "$script_dir/.." && pwd)
-  lock_file="$base_dir/.lock"
+  data_dir="$cwd/.learning"
+  lock_file="$data_dir/.lock"
   now=$(date +%s)
 
   # 多重起動防止。observer 異常終了で学習が止まらないよう stale ロックは奪取する
@@ -40,15 +41,15 @@ main() {
     age=$((now - ts))
     [ "$age" -gt "$LOCK_STALE_SECONDS" ] || return 0
   fi
+  mkdir -p "$data_dir/logs"
   echo "$now" >"$lock_file"
 
-  mkdir -p "$base_dir/logs"
   if [ "${LEARNING_SKILLS_SYNC:-}" = "1" ]; then
     "$script_dir/observe.sh" "$transcript_path" "$cwd" \
-      >>"$base_dir/logs/observer.log" 2>&1 || true
+      >>"$data_dir/logs/observer.log" 2>&1 || true
   else
     nohup "$script_dir/observe.sh" "$transcript_path" "$cwd" \
-      >>"$base_dir/logs/observer.log" 2>&1 &
+      >>"$data_dir/logs/observer.log" 2>&1 &
   fi
   return 0
 }

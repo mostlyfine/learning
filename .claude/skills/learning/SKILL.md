@@ -5,7 +5,7 @@ description: セッション観察で蓄積された Instinct の確認と昇格
 
 # learning - Instinct の管理と昇格
 
-蓄積された Instinct（`.claude/skills/learning/instincts/*.md`）を確認し、信頼度が閾値に達したものをユーザー承認のもとで昇格させる skill。サブコマンドは引数で指定される（既定は `status`）。
+蓄積された Instinct（プロジェクト直下の `.learning/instincts/*.md`）を確認し、信頼度が閾値に達したものをユーザー承認のもとで昇格させる skill。サブコマンドは引数で指定される（既定は `status`）。
 
 ## 共通の前提
 
@@ -15,7 +15,7 @@ description: セッション観察で蓄積された Instinct の確認と昇格
 
 ## /learning status
 
-読み取り専用。`instincts/*.md` の frontmatter を集めて次の形式で表示する:
+読み取り専用。`.learning/instincts/*.md` の frontmatter を集めて次の形式で表示する:
 
 | id | type | confidence | evidence | status |
 |---|---|---|---|---|

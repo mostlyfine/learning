@@ -6,14 +6,18 @@ set -u
 
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 base_dir=$(cd "$script_dir/.." && pwd)
-lock_file="$base_dir/.lock"
-trap 'rm -f "$lock_file"' EXIT
 
 transcript_path="${1:?transcript path required}"
 project_dir="${2:?project dir required}"
 
-instincts_dir="$base_dir/instincts"
+# ランタイムデータは .claude 外に置く（headless の claude は .claude 配下に書き込めない）
+data_dir="$project_dir/.learning"
+lock_file="$data_dir/.lock"
+trap 'rm -f "$lock_file"' EXIT
+
+instincts_dir="$data_dir/instincts"
 mkdir -p "$instincts_dir"
+[ -f "$data_dir/.gitignore" ] || echo '*' >"$data_dir/.gitignore"
 
 prompt_file="$base_dir/prompts/observer.md"
 if [ ! -f "$prompt_file" ]; then
@@ -30,7 +34,7 @@ model="${LEARNING_SKILLS_MODEL:-haiku}"
 
 cd "$project_dir" || exit 0
 if ! LEARNING_SKILLS_OBSERVER=1 claude -p "$prompt" --model "$model" \
-    --allowedTools "Read,Glob,Grep,Write(.claude/skills/learning/instincts/**),Edit(.claude/skills/learning/instincts/**)"; then
+    --allowedTools "Read,Glob,Grep,Write(.learning/instincts/**),Edit(.learning/instincts/**)"; then
   echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] observer failed: transcript=$transcript_path"
 fi
 exit 0

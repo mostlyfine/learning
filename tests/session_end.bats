@@ -4,6 +4,7 @@ setup() {
   TMP="$(mktemp -d)"
   PROJECT="$TMP/project"
   LEARNING="$PROJECT/.claude/skills/learning"
+  DATA="$PROJECT/.learning"
   mkdir -p "$LEARNING/scripts"
   cp "$BATS_TEST_DIRNAME/../.claude/skills/learning/scripts/session-end.sh" \
     "$LEARNING/scripts/session-end.sh"
@@ -53,11 +54,11 @@ run_hook() {
   [ "$(sed -n 2p "$LEARNING/observe-invoked.txt")" = "$PROJECT" ]
 }
 
-@test "happy path: epoch 秒が入ったロックファイルが作成される" {
+@test "happy path: epoch 秒が入ったロックファイルが .learning に作成される" {
   t=$(make_transcript 12)
   run_hook "$(hook_input "$t" "$PROJECT")"
-  [ -f "$LEARNING/.lock" ]
-  [[ "$(cat "$LEARNING/.lock")" =~ ^[0-9]+$ ]]
+  [ -f "$DATA/.lock" ]
+  [[ "$(cat "$DATA/.lock")" =~ ^[0-9]+$ ]]
 }
 
 @test "再帰防止: LEARNING_SKILLS_OBSERVER=1 なら起動しない" {
@@ -97,7 +98,8 @@ run_hook() {
 
 @test "新しいロックがあれば起動しない" {
   t=$(make_transcript 12)
-  date +%s >"$LEARNING/.lock"
+  mkdir -p "$DATA"
+  date +%s >"$DATA/.lock"
   run_hook "$(hook_input "$t" "$PROJECT")"
   [ "$status" -eq 0 ]
   [ ! -f "$LEARNING/observe-invoked.txt" ]
@@ -105,7 +107,8 @@ run_hook() {
 
 @test "stale ロック（30分超）は奪取して起動する" {
   t=$(make_transcript 12)
-  echo "$(($(date +%s) - 1801))" >"$LEARNING/.lock"
+  mkdir -p "$DATA"
+  echo "$(($(date +%s) - 1801))" >"$DATA/.lock"
   run_hook "$(hook_input "$t" "$PROJECT")"
   [ "$status" -eq 0 ]
   [ -f "$LEARNING/observe-invoked.txt" ]
@@ -113,7 +116,8 @@ run_hook() {
 
 @test "ロック内容が数値でなければ stale 扱いで起動する" {
   t=$(make_transcript 12)
-  echo "garbage" >"$LEARNING/.lock"
+  mkdir -p "$DATA"
+  echo "garbage" >"$DATA/.lock"
   run_hook "$(hook_input "$t" "$PROJECT")"
   [ "$status" -eq 0 ]
   [ -f "$LEARNING/observe-invoked.txt" ]

@@ -3,7 +3,8 @@
 setup() {
   TMP="$(mktemp -d)"
   LEARNING="$TMP/project/.claude/skills/learning"
-  mkdir -p "$LEARNING/scripts" "$LEARNING/prompts" "$TMP/bin"
+  DATA="$TMP/project/.learning"
+  mkdir -p "$LEARNING/scripts" "$LEARNING/prompts" "$DATA" "$TMP/bin"
   cp "$BATS_TEST_DIRNAME/../.claude/skills/learning/scripts/observe.sh" \
     "$LEARNING/scripts/observe.sh"
   chmod +x "$LEARNING/scripts/observe.sh"
@@ -21,7 +22,7 @@ STUB
   export PATH="$TMP/bin:$PATH"
   export STUB_DIR="$TMP"
   echo '{"type":"user","message":{"content":"x"}}' >"$TMP/transcript.jsonl"
-  date +%s >"$LEARNING/.lock"
+  date +%s >"$DATA/.lock"
 }
 
 teardown() { rm -rf "$TMP"; }
@@ -40,7 +41,7 @@ arg_after() {
   [ "$status" -eq 0 ]
   grep -qx -- "-p" "$TMP/claude-args.txt"
   [ "$(arg_after --model)" = "haiku" ]
-  [ "$(arg_after --allowedTools)" = "Read,Glob,Grep,Write(.claude/skills/learning/instincts/**),Edit(.claude/skills/learning/instincts/**)" ]
+  [ "$(arg_after --allowedTools)" = "Read,Glob,Grep,Write(.learning/instincts/**),Edit(.learning/instincts/**)" ]
 }
 
 @test "LEARNING_SKILLS_MODEL でモデルを上書きできる" {
@@ -53,7 +54,7 @@ arg_after() {
   run_observe
   prompt="$(arg_after -p)"
   [[ "$prompt" == *"T=$TMP/transcript.jsonl"* ]]
-  [[ "$prompt" == *"I=$LEARNING/instincts"* ]]
+  [[ "$prompt" == *"I=$DATA/instincts"* ]]
   [[ "$prompt" == *"D=$(date +%F)"* ]]
 }
 
@@ -62,22 +63,28 @@ arg_after() {
   [ "$(cat "$TMP/claude-env.txt")" = "1" ]
 }
 
-@test "instincts ディレクトリが作成される" {
+@test "instincts ディレクトリが .learning 配下に作成される" {
   run_observe
-  [ -d "$LEARNING/instincts" ]
+  [ -d "$DATA/instincts" ]
+}
+
+@test ".learning/.gitignore が全除外の内容で作成される" {
+  run_observe
+  [ -f "$DATA/.gitignore" ]
+  [ "$(cat "$DATA/.gitignore")" = "*" ]
 }
 
 @test "成功時にロックが削除される" {
   run_observe
   [ "$status" -eq 0 ]
-  [ ! -f "$LEARNING/.lock" ]
+  [ ! -f "$DATA/.lock" ]
 }
 
 @test "claude 失敗時もロックが削除されエラーがログに出る" {
   export STUB_CLAUDE_EXIT=1
   run_observe
   [ "$status" -eq 0 ]
-  [ ! -f "$LEARNING/.lock" ]
+  [ ! -f "$DATA/.lock" ]
   [[ "$output" == *"observer failed"* ]]
 }
 
@@ -86,6 +93,6 @@ arg_after() {
   run_observe
   [ "$status" -eq 0 ]
   [ ! -f "$TMP/claude-args.txt" ]
-  [ ! -f "$LEARNING/.lock" ]
+  [ ! -f "$DATA/.lock" ]
   [[ "$output" == *"observer prompt missing"* ]]
 }
