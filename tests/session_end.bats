@@ -3,10 +3,11 @@
 setup() {
   TMP="$(mktemp -d)"
   PROJECT="$TMP/project"
-  LEARNING="$PROJECT/.claude/skills/learning"
+  # プラグインは対象プロジェクトの外（プラグインキャッシュ相当）に置かれる
+  LEARNING="$TMP/plugin/skills/learning"
   DATA="$PROJECT/.learning"
-  mkdir -p "$LEARNING/scripts"
-  cp "$BATS_TEST_DIRNAME/../.claude/skills/learning/scripts/session-end.sh" \
+  mkdir -p "$LEARNING/scripts" "$PROJECT/.claude"
+  cp "$BATS_TEST_DIRNAME/../skills/learning/scripts/session-end.sh" \
     "$LEARNING/scripts/session-end.sh"
   # observe.sh スタブ: 呼び出し引数を記録するだけ
   cat >"$LEARNING/scripts/observe.sh" <<'STUB'
