@@ -2,10 +2,11 @@
 
 setup() {
   TMP="$(mktemp -d)"
-  LEARNING="$TMP/project/.claude/skills/learning"
+  # プラグインは対象プロジェクトの外（プラグインキャッシュ相当）に置かれる
+  LEARNING="$TMP/plugin/skills/learning"
   DATA="$TMP/project/.learning"
   mkdir -p "$LEARNING/scripts" "$LEARNING/prompts" "$DATA" "$TMP/bin"
-  cp "$BATS_TEST_DIRNAME/../.claude/skills/learning/scripts/observe.sh" \
+  cp "$BATS_TEST_DIRNAME/../skills/learning/scripts/observe.sh" \
     "$LEARNING/scripts/observe.sh"
   chmod +x "$LEARNING/scripts/observe.sh"
   # プロンプトのフィクスチャ（プレースホルダ置換を検証できる最小内容）

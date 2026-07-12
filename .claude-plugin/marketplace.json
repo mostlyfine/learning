@@ -1,0 +1,12 @@
+{
+  "name": "learning-skills",
+  "description": "Claude Code セッションの自動観察で知識を蓄積・昇格させる learning プラグインの配布元",
+  "owner": { "name": "mostlyfine" },
+  "plugins": [
+    {
+      "name": "learning",
+      "source": "./",
+      "description": "セッション自動観察による Instinct の蓄積と承認制昇格"
+    }
+  ]
+}
