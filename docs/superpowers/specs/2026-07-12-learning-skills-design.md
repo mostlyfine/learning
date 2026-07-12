@@ -52,6 +52,7 @@ SessionEnd hook (session-end.sh)
 
 - commit 対象は SKILL.md・scripts/・prompts/・.gitignore のみ。
 - hook 登録は導入先プロジェクトの `.claude/settings.json` に SessionEnd → `.claude/skills/learning/scripts/session-end.sh` を記述する。
+- このリポジトリ（mostlyfine/learning-skills）自体も `.claude/skills/learning/` に直接実装し、リポジトリ自身が導入例として動作する（dogfooding）。テストは `tests/` にリポジトリルート直下で持つ。
 
 ## 観察パイプライン
 
