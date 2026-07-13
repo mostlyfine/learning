@@ -2,15 +2,19 @@
 
 setup() {
   TMP="$(mktemp -d)"
-  # プラグインは対象プロジェクトの外（プラグインキャッシュ相当）に置かれる
-  LEARNING="$TMP/plugin/skills/learning"
+  # プラグインは対象プロジェクトの外（プラグインキャッシュ相当）に置かれる。
+  # 実プラグインと同じ <plugin>/hooks/{scripts,prompts} 構成にする
+  PLUGIN="$TMP/plugin"
+  LEARNING="$PLUGIN/hooks"
   DATA="$TMP/project/.learning"
-  mkdir -p "$LEARNING/scripts" "$LEARNING/prompts" "$DATA" "$TMP/bin"
-  cp "$BATS_TEST_DIRNAME/../skills/learning/scripts/observe.sh" \
+  mkdir -p "$LEARNING/scripts" "$LEARNING/prompts" "$PLUGIN/.learning" "$DATA" "$TMP/bin"
+  cp "$BATS_TEST_DIRNAME/../hooks/scripts/observe.sh" \
     "$LEARNING/scripts/observe.sh"
   chmod +x "$LEARNING/scripts/observe.sh"
+  # エンジン設定（メモリー）: model 行なしの claude は haiku 既定
+  printf 'engine=claude\n' >"$PLUGIN/.learning/config"
   # プロンプトのフィクスチャ（プレースホルダ置換を検証できる最小内容）
-  printf 'T={{TRANSCRIPT_PATH}} I={{INSTINCTS_DIR}} D={{TODAY}}\n' \
+  printf 'T={{TRANSCRIPT_PATH}} I={{INSTINCTS_DIR}} D={{TODAY}} S={{SESSION_ID}}\n' \
     >"$LEARNING/prompts/observer.md"
   # claude スタブ: 引数と環境変数を記録する
   cat >"$TMP/bin/claude" <<'STUB'
@@ -37,6 +41,21 @@ arg_after() {
   awk -v flag="$1" '$0 == flag { getline; print; exit }' "$TMP/claude-args.txt"
 }
 
+# $1: エンジン名。引数と環境変数を記録するスタブを PATH に置く
+make_engine_stub() {
+  cat >"$TMP/bin/$1" <<'STUB'
+#!/usr/bin/env bash
+printf '%s\n' "$@" >"${STUB_DIR:?}/engine-args.txt"
+echo "${LEARNING_SKILLS_OBSERVER:-unset}" >"${STUB_DIR:?}/engine-env.txt"
+STUB
+  chmod +x "$TMP/bin/$1"
+}
+
+# engine-args.txt から、指定フラグの次の値を返す
+arg_in_engine() {
+  awk -v flag="$1" '$0 == flag { getline; print; exit }' "$TMP/engine-args.txt"
+}
+
 @test "claude を -p 付き・既定モデル haiku で起動する" {
   run_observe
   [ "$status" -eq 0 ]
@@ -45,8 +64,8 @@ arg_after() {
   [ "$(arg_after --allowedTools)" = "Read,Glob,Grep,Write(.learning/instincts/**),Edit(.learning/instincts/**)" ]
 }
 
-@test "LEARNING_SKILLS_MODEL でモデルを上書きできる" {
-  export LEARNING_SKILLS_MODEL=opus
+@test "config の model 行でモデルを上書きできる" {
+  printf 'engine=claude\nmodel=opus\n' >"$PLUGIN/.learning/config"
   run_observe
   [ "$(arg_after --model)" = "opus" ]
 }
@@ -96,4 +115,67 @@ arg_after() {
   [ ! -f "$TMP/claude-args.txt" ]
   [ ! -f "$DATA/.lock" ]
   [[ "$output" == *"observer prompt missing"* ]]
+}
+
+@test "config が無ければエンジンを起動せずログを出してロックを削除する" {
+  rm -f "$PLUGIN/.learning/config"
+  run_observe
+  [ "$status" -eq 0 ]
+  [ ! -f "$TMP/claude-args.txt" ]
+  [ ! -f "$DATA/.lock" ]
+  [[ "$output" == *"engine not configured"* ]]
+}
+
+@test "engine=codex: codex exec が sandbox 付き・model なしで起動される" {
+  make_engine_stub codex
+  printf 'engine=codex\n' >"$PLUGIN/.learning/config"
+  run_observe
+  [ "$status" -eq 0 ]
+  [ ! -f "$TMP/claude-args.txt" ]
+  [ "$(sed -n 1p "$TMP/engine-args.txt")" = "exec" ]
+  grep -qx -- "--sandbox" "$TMP/engine-args.txt"
+  [ "$(arg_in_engine --sandbox)" = "workspace-write" ]
+  ! grep -qx -- "--model" "$TMP/engine-args.txt"
+  [ "$(cat "$TMP/engine-env.txt")" = "1" ]
+}
+
+@test "engine=codex: config の model 行があれば --model が付く" {
+  make_engine_stub codex
+  printf 'engine=codex\nmodel=gpt-5.4-mini\n' >"$PLUGIN/.learning/config"
+  run_observe
+  [ "$(arg_in_engine --model)" = "gpt-5.4-mini" ]
+}
+
+@test "engine=copilot: copilot -p が --no-ask-user と --model 付きで起動される" {
+  make_engine_stub copilot
+  printf 'engine=copilot\nmodel=claude-haiku-4.5\n' >"$PLUGIN/.learning/config"
+  run_observe
+  [ "$status" -eq 0 ]
+  grep -qx -- "-p" "$TMP/engine-args.txt"
+  grep -qx -- "--no-ask-user" "$TMP/engine-args.txt"
+  [ "$(arg_in_engine --model)" = "claude-haiku-4.5" ]
+  [ "$(cat "$TMP/engine-env.txt")" = "1" ]
+}
+
+@test "既知以外のエンジンはコマンドとして素通しで起動される" {
+  make_engine_stub myengine
+  printf 'engine=myengine\n' >"$PLUGIN/.learning/config"
+  run_observe
+  [ "$status" -eq 0 ]
+  [ ! -f "$TMP/claude-args.txt" ]
+  [ -f "$TMP/engine-args.txt" ]
+  [ "$(cat "$TMP/engine-env.txt")" = "1" ]
+  grep -q "T=$TMP/transcript.jsonl" "$TMP/engine-args.txt"
+}
+
+@test "{{SESSION_ID}} が第3引数で置換される" {
+  run "$LEARNING/scripts/observe.sh" "$TMP/transcript.jsonl" "$TMP/project" "sess-42"
+  prompt="$(arg_after -p)"
+  [[ "$prompt" == *"S=sess-42"* ]]
+}
+
+@test "{{SESSION_ID}} は第3引数がなければ unknown になる" {
+  run_observe
+  prompt="$(arg_after -p)"
+  [[ "$prompt" == *"S=unknown"* ]]
 }

@@ -7,6 +7,17 @@ allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.learning/instincts/**), 
 
 蓄積された Instinct（プロジェクト直下の `.learning/instincts/*.md`）のうち信頼度が閾値に達したものを、ユーザー承認のもとで昇格させる。
 
+## 初回セットアップ（エンジン設定が無い場合のみ）
+
+プラグインルート（`${CLAUDE_PLUGIN_ROOT}`。トークンが使えない環境ではこのコマンド定義ファイルの位置から辿る）の `.learning/config` を確認する。存在しなければ、セッション観察に使う分析エンジンをユーザーに確認して作成する:
+
+1. 選択肢 `claude` / `codex` / `copilot` を提示する（AskUserQuestion ツールが利用可能ならそれを使い、なければ対話で確認する）
+2. 選択に応じて `.learning/config` を書き込む:
+   - claude → `engine=claude` と `model=haiku`
+   - copilot → `engine=copilot` と `model=claude-haiku-4.5`
+   - codex → `engine=codex` のみ（モデルは CLI 既定に任せる）
+3. 「保存しました。以降のセッション終了時から観察が有効になります」と伝えて本来の処理を続行する
+
 ## 前提
 
 - Instinct ファイルの frontmatter: `id`, `type`(correction|error-solution|workflow), `status`(active|promoted|rejected), `confidence`, `evidence_count`, `promote_to`(rules|instructions|skill|agent), `created`, `updated`
@@ -22,7 +33,7 @@ allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.learning/instincts/**), 
    - `skill` → 既存 skill の手順改善、または `.claude/skills/<id>/SKILL.md` の新規作成
    - `agent` → `.claude/agents/<id>.md` としてサブエージェント定義を新規作成
 3. 昇格先ファイルの現状を読み、具体的な変更案（diff 形式または新規ファイル全文）を作る
-4. **1件ずつ** AskUserQuestion で提示し、承認 / 却下 / 保留 を確認する。質問文には Instinct の Trigger/Action、evidence_count、変更案の要約を含める
+4. **1件ずつ**ユーザーに提示し、承認 / 却下 / 保留 を確認する（AskUserQuestion ツールが利用可能ならそれを使い、なければ対話で尋ねる）。質問文には Instinct の Trigger/Action、evidence_count、変更案の要約を含める
    - **承認** → 変更を適用し、Instinct の frontmatter を `status: promoted` に更新、`promoted_to: <適用先パス>` を追記する
    - **却下** → `status: rejected` に更新する（observer が同種を再作成しなくなる）
    - **保留** → 何も変更しない（次回の review に持ち越し）

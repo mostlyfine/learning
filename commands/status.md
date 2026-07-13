@@ -5,7 +5,18 @@ allowed-tools: Read, Glob, Grep
 
 # /learning:status — Instinct の一覧表示
 
-蓄積された Instinct（プロジェクト直下の `.learning/instincts/*.md`）の frontmatter を集めて一覧表示する。読み取り専用であり、ファイル編集は一切しない。
+蓄積された Instinct（プロジェクト直下の `.learning/instincts/*.md`）の frontmatter を集めて一覧表示する。下記の初回セットアップを除き、ファイル編集は一切しない。
+
+## 初回セットアップ（エンジン設定が無い場合のみ）
+
+プラグインルート（`${CLAUDE_PLUGIN_ROOT}`。トークンが使えない環境ではこのコマンド定義ファイルの位置から辿る）の `.learning/config` を確認する。存在しなければ、セッション観察に使う分析エンジンをユーザーに確認して作成する:
+
+1. 選択肢 `claude` / `codex` / `copilot` を提示する（AskUserQuestion ツールが利用可能ならそれを使い、なければ対話で確認する）
+2. 選択に応じて `.learning/config` を書き込む:
+   - claude → `engine=claude` と `model=haiku`
+   - copilot → `engine=copilot` と `model=claude-haiku-4.5`
+   - codex → `engine=codex` のみ（モデルは CLI 既定に任せる）
+3. 「保存しました。以降のセッション終了時から観察が有効になります」と伝えて本来の処理を続行する
 
 ## 前提
 
