@@ -1,7 +1,9 @@
 #!/usr/bin/env bats
 
 setup() {
-  TMP="$(mktemp -d)"
+  # macOS では mktemp が /var/folders（/private/var へのシンボリックリンク）を返し、
+  # git が物理パスに解決してパス比較が破綻するため物理パスに正規化する
+  TMP="$(cd "$(mktemp -d)" && pwd -P)"
   PROJECT="$TMP/project"
   # プラグインは対象プロジェクトの外（プラグインキャッシュ相当）に置かれる。
   # 実プラグインと同じ <plugin>/hooks/{scripts,prompts} 構成にする
@@ -222,6 +224,29 @@ STUB
   touch "$TMP/agents-proj/AGENTS.md"
   run_hook "$(hook_input "$t" "$TMP/agents-proj")"
   [ -f "$LEARNING/observe-invoked.txt" ]
+}
+
+@test "git worktree: データはメイン作業ツリーの .learning に集約される" {
+  t=$(make_transcript 12)
+  git -C "$PROJECT" init -q
+  git -C "$PROJECT" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+  WT="$TMP/wt"
+  git -C "$PROJECT" worktree add -q "$WT" -b feature
+  mkdir -p "$WT/.claude"
+  run_hook "$(hook_input "$t" "$WT")"
+  [ "$status" -eq 0 ]
+  [ "$(sed -n 2p "$LEARNING/observe-invoked.txt")" = "$PROJECT" ]
+  [ -f "$DATA/.lock" ]
+  [ ! -d "$WT/.learning" ]
+}
+
+@test "git repo 直下のセッションは従来どおり cwd の .learning を使う" {
+  t=$(make_transcript 12)
+  git -C "$PROJECT" init -q
+  run_hook "$(hook_input "$t" "$PROJECT")"
+  [ "$status" -eq 0 ]
+  [ "$(sed -n 2p "$LEARNING/observe-invoked.txt")" = "$PROJECT" ]
+  [ -f "$DATA/.lock" ]
 }
 
 @test "エンジン設定（config）が無ければ起動しない" {

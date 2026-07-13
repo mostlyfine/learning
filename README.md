@@ -68,7 +68,7 @@ hooks は experimental のため設定での有効化と、plugin hook の trust
 
 なおこのリポジトリ自体では、dogfooding のため `.claude/settings.json` に同じ SessionEnd hook をプロジェクトローカルで登録している。
 
-ランタイムデータ（Instinct・ログ・ロック）はプロジェクト直下の `.learning/` に置かれる（初回実行時に自動作成、`.learning/.gitignore` により全体が commit 対象外）。`.claude/` 配下に置かない理由: headless の claude は `.claude/` 配下への書き込みが保護により拒否されるため。
+ランタイムデータ（Instinct・ログ・ロック）はプロジェクト直下の `.learning/` に置かれる（初回実行時に自動作成、`.learning/.gitignore` により全体が commit 対象外）。`.claude/` 配下に置かない理由: headless の claude は `.claude/` 配下への書き込みが保護により拒否されるため。git worktree でのセッションは worktree ごとに分散させず、メイン作業ツリー直下の `.learning/` に集約される（worktree 削除で学習データが消えるのを防ぐため）。
 
 ## 使い方
 
