@@ -8,5 +8,5 @@ allowed-tools: SlashCommand(/learning:status), SlashCommand(/learning:review)
 
 実際の手順はコマンド側（`commands/status.md`, `commands/review.md`）にある。この skill は自然言語での呼びかけを対応するコマンドへ振り分けるだけ。
 
-- ユーザーの意図（または引数 `$ARGUMENTS`）が昇格レビューなら SlashCommand ツールで `/learning:review` を実行する
-- それ以外（一覧・状況確認の意図）なら `/learning:status` を実行する
+- ユーザーの意図（または引数 `$ARGUMENTS`）が昇格レビューなら `/learning:review` コマンドを実行する（Claude Code では SlashCommand ツールを使う）
+- それ以外（一覧・状況確認の意図）なら `/learning:status` コマンドを実行する

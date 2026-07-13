@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "hooks": {
+    "stop": [
+      {
+        "command": "/ABSOLUTE/PATH/TO/learning-skills/hooks/scripts/session-end.sh"
+      }
+    ]
+  }
+}
