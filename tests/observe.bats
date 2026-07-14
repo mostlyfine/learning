@@ -157,15 +157,16 @@ arg_in_engine() {
   [ "$(cat "$TMP/engine-env.txt")" = "1" ]
 }
 
-@test "既知以外のエンジンはコマンドとして素通しで起動される" {
+@test "未知のエンジンは実行せず有効値の案内をログに出して exit 0 する" {
   make_engine_stub myengine
   printf 'engine=myengine\n' >"$PLUGIN/.learning/config"
   run_observe
   [ "$status" -eq 0 ]
   [ ! -f "$TMP/claude-args.txt" ]
-  [ -f "$TMP/engine-args.txt" ]
-  [ "$(cat "$TMP/engine-env.txt")" = "1" ]
-  grep -q "T=$TMP/transcript.jsonl" "$TMP/engine-args.txt"
+  [ ! -f "$TMP/engine-args.txt" ]
+  [[ "$output" == *"unknown engine: myengine"* ]]
+  [[ "$output" == *"claude, codex, copilot"* ]]
+  [[ "$output" == *"/learning:status"* ]]
 }
 
 @test "{{SESSION_ID}} が第3引数で置換される" {

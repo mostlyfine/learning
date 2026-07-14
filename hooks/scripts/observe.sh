@@ -63,9 +63,8 @@ case "$engine" in
       --allow-tool 'write(.learning/instincts/**)' --no-ask-user -s
     ;;
   *)
-    # 未知のエンジンはコマンドとしてそのまま実行する（意図的に word split。
-    # モデル指定やツール許可のフラグはエンジン文字列に含めるユーザー責任）
-    LEARNING_SKILLS_OBSERVER=1 $engine "$prompt"
+    echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] unknown engine: $engine (valid: claude, codex, copilot); run /learning:status to fix the config"
+    exit 0
     ;;
 esac || echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] observer failed: transcript=$transcript_path"
 exit 0
