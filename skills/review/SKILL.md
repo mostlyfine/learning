@@ -1,5 +1,6 @@
 ---
-description: 昇格資格のある Instinct を1件ずつ承認 / 却下 / 保留する
+name: review
+description: 昇格資格のある Instinct を1件ずつ承認 / 却下 / 保留する。「instinct を昇格」「学習内容をレビュー」などの呼びかけでも実行する。
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.learning/instincts/**), Edit(.claude/rules/**), Edit(.claude/skills/**), Edit(.claude/agents/**), Edit(CLAUDE.md), Write(.claude/rules/**), Write(.claude/skills/**), Write(.claude/agents/**)
 ---
 
@@ -9,7 +10,7 @@ allowed-tools: Read, Glob, Grep, AskUserQuestion, Edit(.learning/instincts/**), 
 
 ## 初回セットアップ（エンジン設定が無い場合のみ）
 
-プラグインルート（`${CLAUDE_PLUGIN_ROOT}`。トークンが使えない環境ではこのコマンド定義ファイルの位置から辿る）の `.learning/config` を確認する。存在しなければ、セッション観察に使う分析エンジンをユーザーに確認して作成する:
+プラグインルート（`${CLAUDE_PLUGIN_ROOT}`。トークンが使えない環境ではこのスキル定義ファイルの位置から辿る）の `.learning/config` を確認する。存在しなければ、セッション観察に使う分析エンジンをユーザーに確認して作成する:
 
 1. 選択肢 `claude` / `codex` / `copilot` を提示する（AskUserQuestion ツールが利用可能ならそれを使い、なければ対話で確認する）
 2. 選択に応じて `.learning/config` を書き込む:

@@ -1,5 +1,6 @@
 ---
-description: 蓄積された Instinct の一覧と昇格資格を確認する（読み取り専用）
+name: status
+description: 蓄積された Instinct の一覧と昇格資格を確認する（読み取り専用）。「instinct の一覧」「学習状況を見せて」などの呼びかけでも実行する。
 allowed-tools: Read, Glob, Grep
 ---
 
@@ -9,7 +10,7 @@ allowed-tools: Read, Glob, Grep
 
 ## 初回セットアップ（エンジン設定が無い場合のみ）
 
-プラグインルート（`${CLAUDE_PLUGIN_ROOT}`。トークンが使えない環境ではこのコマンド定義ファイルの位置から辿る）の `.learning/config` を確認する。存在しなければ、セッション観察に使う分析エンジンをユーザーに確認して作成する:
+プラグインルート（`${CLAUDE_PLUGIN_ROOT}`。トークンが使えない環境ではこのスキル定義ファイルの位置から辿る）の `.learning/config` を確認する。存在しなければ、セッション観察に使う分析エンジンをユーザーに確認して作成する:
 
 1. 選択肢 `claude` / `codex` / `copilot` を提示する（AskUserQuestion ツールが利用可能ならそれを使い、なければ対話で確認する）
 2. 選択に応じて `.learning/config` を書き込む:
@@ -20,7 +21,7 @@ allowed-tools: Read, Glob, Grep
 
 ## 前提
 
-- 一覧に使う frontmatter: `id`, `type`, `confidence`, `evidence_count`, `status`（スキーマの全体は `commands/review.md` と observer プロンプトを参照）
+- 一覧に使う frontmatter: `id`, `type`, `confidence`, `evidence_count`, `status`（スキーマの全体は `skills/review/SKILL.md` と observer プロンプトを参照）
 - 昇格資格: `status: active` かつ `confidence >= 0.7`
 - instincts ディレクトリが存在しない・空の場合は「まだ Instinct が蓄積されていません。セッションを重ねると自動的に蓄積されます」と report して終了する
 
