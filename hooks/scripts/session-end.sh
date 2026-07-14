@@ -39,11 +39,20 @@ main() {
   [ "${turns:-0}" -gt 0 ] || turns=$(wc -l <"$transcript_path" | tr -d ' ')
   [ "${turns:-0}" -ge "$MIN_TURNS" ] || return 0
 
+  # git worktree からのセッションはメイン作業ツリーに集約する（worktree ごとに
+  # .learning が分散すると confidence が育たず、worktree 削除で学習データが消える）
+  local common_dir project_root
+  project_root="$cwd"
+  common_dir=$(git -C "$cwd" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
+  if [ -n "$common_dir" ] && [ -d "$(dirname "$common_dir")" ]; then
+    project_root=$(dirname "$common_dir")
+  fi
+
   # ランタイムデータは .claude 外に置く（headless の claude は .claude 配下に書き込めない）
   local script_dir plugin_root data_dir lock_file state_file now
   script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
   plugin_root=$(cd "$script_dir/../.." && pwd)
-  data_dir="$cwd/.learning"
+  data_dir="$project_root/.learning"
   lock_file="$data_dir/.lock"
   state_file="$data_dir/analyzed.tsv"
   now=$(date +%s)
@@ -81,10 +90,10 @@ main() {
   mv "$state_file.tmp" "$state_file"
 
   if [ "${LEARNING_SKILLS_SYNC:-}" = "1" ]; then
-    "$script_dir/observe.sh" "$transcript_path" "$cwd" "$session_id" \
+    "$script_dir/observe.sh" "$transcript_path" "$project_root" "$session_id" \
       >>"$data_dir/logs/observer.log" 2>&1 || true
   else
-    nohup "$script_dir/observe.sh" "$transcript_path" "$cwd" "$session_id" \
+    nohup "$script_dir/observe.sh" "$transcript_path" "$project_root" "$session_id" \
       >>"$data_dir/logs/observer.log" 2>&1 &
   fi
   return 0
