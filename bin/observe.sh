@@ -5,8 +5,7 @@
 set -u
 
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-base_dir=$(cd "$script_dir/.." && pwd)
-plugin_root=$(cd "$base_dir/.." && pwd)
+plugin_root=$(cd "$script_dir/.." && pwd)
 
 transcript_path="${1:?transcript path required}"
 project_dir="${2:?project dir required}"
@@ -21,7 +20,7 @@ instincts_dir="$data_dir/instincts"
 mkdir -p "$instincts_dir"
 [ -f "$data_dir/.gitignore" ] || echo '*' >"$data_dir/.gitignore"
 
-prompt_file="$base_dir/prompts/observer.md"
+prompt_file="$plugin_root/hooks/prompts/observer.md"
 if [ ! -f "$prompt_file" ]; then
   echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] observer prompt missing: $prompt_file"
   exit 0

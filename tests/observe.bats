@@ -3,19 +3,18 @@
 setup() {
   TMP="$(mktemp -d)"
   # プラグインは対象プロジェクトの外（プラグインキャッシュ相当）に置かれる。
-  # 実プラグインと同じ <plugin>/hooks/{scripts,prompts} 構成にする
+  # 実プラグインと同じ <plugin>/bin と <plugin>/hooks/prompts 構成にする
   PLUGIN="$TMP/plugin"
-  LEARNING="$PLUGIN/hooks"
+  BIN="$PLUGIN/bin"
   DATA="$TMP/project/.learning"
-  mkdir -p "$LEARNING/scripts" "$LEARNING/prompts" "$PLUGIN/.learning" "$DATA" "$TMP/bin"
-  cp "$BATS_TEST_DIRNAME/../hooks/scripts/observe.sh" \
-    "$LEARNING/scripts/observe.sh"
-  chmod +x "$LEARNING/scripts/observe.sh"
+  mkdir -p "$BIN" "$PLUGIN/hooks/prompts" "$PLUGIN/.learning" "$DATA" "$TMP/bin"
+  cp "$BATS_TEST_DIRNAME/../bin/observe.sh" "$BIN/observe.sh"
+  chmod +x "$BIN/observe.sh"
   # エンジン設定（メモリー）: model 行なしの claude は haiku 既定
   printf 'engine=claude\n' >"$PLUGIN/.learning/config"
   # プロンプトのフィクスチャ（プレースホルダ置換を検証できる最小内容）
   printf 'T={{TRANSCRIPT_PATH}} I={{INSTINCTS_DIR}} D={{TODAY}} S={{SESSION_ID}}\n' \
-    >"$LEARNING/prompts/observer.md"
+    >"$PLUGIN/hooks/prompts/observer.md"
   # claude スタブ: 引数と環境変数を記録する
   cat >"$TMP/bin/claude" <<'STUB'
 #!/usr/bin/env bash
@@ -33,7 +32,7 @@ STUB
 teardown() { rm -rf "$TMP"; }
 
 run_observe() {
-  run "$LEARNING/scripts/observe.sh" "$TMP/transcript.jsonl" "$TMP/project"
+  run "$BIN/observe.sh" "$TMP/transcript.jsonl" "$TMP/project"
 }
 
 # 記録された引数リストから、指定フラグの次の値を返す
@@ -109,7 +108,7 @@ arg_in_engine() {
 }
 
 @test "プロンプトファイルが存在しない場合は claude を起動せずロックを削除する" {
-  rm -f "$LEARNING/prompts/observer.md"
+  rm -f "$PLUGIN/hooks/prompts/observer.md"
   run_observe
   [ "$status" -eq 0 ]
   [ ! -f "$TMP/claude-args.txt" ]
@@ -170,7 +169,7 @@ arg_in_engine() {
 }
 
 @test "{{SESSION_ID}} が第3引数で置換される" {
-  run "$LEARNING/scripts/observe.sh" "$TMP/transcript.jsonl" "$TMP/project" "sess-42"
+  run "$BIN/observe.sh" "$TMP/transcript.jsonl" "$TMP/project" "sess-42"
   prompt="$(arg_after -p)"
   [[ "$prompt" == *"S=sess-42"* ]]
 }
