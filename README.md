@@ -66,7 +66,7 @@ hooks は experimental のため設定での有効化と、plugin hook の trust
 | Copilot CLI | `agentStop` | ルート `hooks.json`（Copilot 形式） |
 | Cursor | `stop` | `hooks/configs/cursor-hooks.json`（手動登録） |
 
-なおこのリポジトリ自体では、dogfooding のため `.claude/settings.json` に同じ SessionEnd hook をプロジェクトローカルで登録している。
+なおこのリポジトリ自体を dogfooding する場合は、`claude --plugin-dir .` でこのディレクトリをプラグインとしてそのセッション限定で読み込む。
 
 ランタイムデータ（Instinct・ログ・ロック）はプロジェクト直下の `.learning/` に置かれる（初回実行時に自動作成、`.learning/.gitignore` により全体が commit 対象外）。`.claude/` 配下に置かない理由: headless の claude は `.claude/` 配下への書き込みが保護により拒否されるため。git worktree でのセッションは worktree ごとに分散させず、メイン作業ツリー直下の `.learning/` に集約される（worktree 削除で学習データが消えるのを防ぐため）。
 
