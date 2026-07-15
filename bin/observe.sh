@@ -32,7 +32,7 @@ prompt="${prompt//\{\{INSTINCTS_DIR\}\}/$instincts_dir}"
 prompt="${prompt//\{\{TODAY\}\}/$(date +%F)}"
 prompt="${prompt//\{\{SESSION_ID\}\}/$session_id}"
 
-# エンジンとモデルはプラグイン内の設定ファイル（/learning:status の初回セットアップで
+# エンジンとモデルはプラグイン内の設定ファイル（/learning:recall の初回セットアップで
 # 作成されるメモリー）から読む
 config_file="$plugin_root/.learning/config"
 engine=""
@@ -42,7 +42,7 @@ if [ -f "$config_file" ]; then
   model=$(sed -n 's/^model=//p' "$config_file" | tail -1)
 fi
 if [ -z "$engine" ]; then
-  echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] engine not configured; run /learning:status to set up"
+  echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] engine not configured; run /learning:recall to set up"
   exit 0
 fi
 

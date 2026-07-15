@@ -58,7 +58,7 @@ main() {
   now=$(date +%s)
 
   # エンジン未設定なら何もしない（analyzed.tsv に記録して学習機会を失うのを防ぐため
-  # 増分ガードより前で判定する）。設定は /learning:status の初回セットアップで作られる
+  # 増分ガードより前で判定する）。設定は /learning:recall の初回セットアップで作られる
   [ -f "$plugin_root/.learning/config" ] || return 0
 
   # 増分ガード: ターン単位で発火するイベント（Stop/agentStop/stop）による
