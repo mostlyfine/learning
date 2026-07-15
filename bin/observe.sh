@@ -4,8 +4,11 @@
 # 呼び出し元によって logs/observer.log にリダイレクトされる。
 set -u
 
+readonly valid_engines="claude codex copilot"
+
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-plugin_root=$(cd "$script_dir/.." && pwd)
+source "$script_dir/lib.sh"
+plugin_root=$(resolve_plugin_root "$script_dir")
 
 transcript_path="${1:?transcript path required}"
 project_dir="${2:?project dir required}"
@@ -62,7 +65,7 @@ case "$engine" in
       --allow-tool 'write(.learning/instincts/**)' --no-ask-user -s
     ;;
   *)
-    echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] unknown engine: $engine (valid: claude, codex, copilot); run /learning:setup to fix the config"
+    echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] unknown engine: $engine (valid: ${valid_engines// /, }); run /learning:setup to fix the config"
     exit 0
     ;;
 esac || echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] observer failed: transcript=$transcript_path"

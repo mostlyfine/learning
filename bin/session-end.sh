@@ -51,7 +51,8 @@ main() {
   # ランタイムデータは .claude 外に置く（headless の claude は .claude 配下に書き込めない）
   local script_dir plugin_root data_dir lock_file state_file now
   script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-  plugin_root=$(cd "$script_dir/.." && pwd)
+  source "$script_dir/lib.sh"
+  plugin_root=$(resolve_plugin_root "$script_dir")
   data_dir="$project_root/.learning"
   lock_file="$data_dir/.lock"
   state_file="$data_dir/analyzed.tsv"

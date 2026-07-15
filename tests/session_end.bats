@@ -1,19 +1,13 @@
 #!/usr/bin/env bats
 
+load helpers
+
 setup() {
-  # macOS では mktemp が /var/folders（/private/var へのシンボリックリンク）を返し、
-  # git が物理パスに解決してパス比較が破綻するため物理パスに正規化する
-  TMP="$(cd "$(mktemp -d)" && pwd -P)"
+  setup_plugin_scaffold
   PROJECT="$TMP/project"
-  # プラグインは対象プロジェクトの外（プラグインキャッシュ相当）に置かれる。
-  # 実プラグインと同じ <plugin>/bin 構成にする
-  PLUGIN="$TMP/plugin"
-  BIN="$PLUGIN/bin"
   DATA="$PROJECT/.learning"
-  mkdir -p "$BIN" "$PLUGIN/.learning" "$PROJECT/.claude"
+  mkdir -p "$PROJECT/.claude"
   cp "$BATS_TEST_DIRNAME/../bin/session-end.sh" "$BIN/session-end.sh"
-  # エンジン設定（メモリー）: 未設定だと observer は起動しない
-  printf 'engine=claude\n' >"$PLUGIN/.learning/config"
   # observe.sh スタブ: 呼び出し引数をプラグインルートに記録するだけ
   cat >"$BIN/observe.sh" <<'STUB'
 #!/usr/bin/env bash

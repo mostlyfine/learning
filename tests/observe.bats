@@ -1,17 +1,15 @@
 #!/usr/bin/env bats
 
+load helpers
+
 setup() {
-  TMP="$(mktemp -d)"
+  setup_plugin_scaffold
   # プラグインは対象プロジェクトの外（プラグインキャッシュ相当）に置かれる。
-  # 実プラグインと同じ <plugin>/bin と <plugin>/hooks/prompts 構成にする
-  PLUGIN="$TMP/plugin"
-  BIN="$PLUGIN/bin"
+  # 実プラグインと同じ <plugin>/hooks/prompts 構成にする
   DATA="$TMP/project/.learning"
-  mkdir -p "$BIN" "$PLUGIN/hooks/prompts" "$PLUGIN/.learning" "$DATA" "$TMP/bin"
+  mkdir -p "$PLUGIN/hooks/prompts" "$DATA" "$TMP/bin"
   cp "$BATS_TEST_DIRNAME/../bin/observe.sh" "$BIN/observe.sh"
   chmod +x "$BIN/observe.sh"
-  # エンジン設定（メモリー）: model 行なしの claude は haiku 既定
-  printf 'engine=claude\n' >"$PLUGIN/.learning/config"
   # プロンプトのフィクスチャ（プレースホルダ置換を検証できる最小内容）
   printf 'T={{TRANSCRIPT_PATH}} I={{INSTINCTS_DIR}} D={{TODAY}} S={{SESSION_ID}}\n' \
     >"$PLUGIN/hooks/prompts/observer.md"
