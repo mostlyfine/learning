@@ -25,4 +25,4 @@ allowed-tools: Read, Glob, Grep, Bash(git rev-parse:*), SlashCommand(/learning:s
 |---|---|---|---|---|
 | use-uv-not-pip | correction | 0.7 | 3 | active |
 
-表の後に「昇格資格あり: N 件（/learning:review で提案を確認できます）」を添える。
+表の後に、昇格資格のある Instinct が1件以上あれば「昇格資格あり: N 件（/learning:review で提案を確認できます）」、0件なら「昇格資格なし」を添える。
