@@ -1,27 +1,21 @@
 ---
 name: status
-description: 蓄積された Instinct の一覧と昇格資格を確認する（読み取り専用）。「instinct の一覧」「学習状況を見せて」などの呼びかけでも実行する。
-allowed-tools: Read, Glob, Grep
+description: learning プラグインがこれまでに何を学習したかを確認するとき必ず使う（読み取り専用）。蓄積された Instinct（学習で得た知見）の一覧表示と、昇格資格のある Instinct の確認を行う。「learning status」「learning の状態」「学習状況を見せて」のような直接の呼びかけに加え、蓄積された instinct・知見・学習内容を見たい、学習が進んでいるか知りたい、昇格できそうなものを確認したい、といった learning プラグインの現状把握を求めるあらゆる質問で実行する。エンジン設定が未作成なら初回セットアップ（/learning:setup）へ委譲する。
+allowed-tools: Read, Glob, Grep, Bash(git rev-parse:*), SlashCommand(/learning:setup)
 ---
 
 # /learning:status — Instinct の一覧表示
 
-蓄積された Instinct（プロジェクト直下の `.learning/instincts/*.md`）の frontmatter を集めて一覧表示する。下記の初回セットアップを除き、ファイル編集は一切しない。
+蓄積された Instinct（`.learning/instincts/*.md`）の frontmatter を集めて一覧表示する。ファイル編集は一切しない（エンジン設定が無い場合のセットアップは `/learning:setup` に委譲する）。
 
-## 初回セットアップ（エンジン設定が無い場合のみ）
+## 初回セットアップへの委譲（エンジン設定が無い場合のみ）
 
-プラグインルート（`${CLAUDE_PLUGIN_ROOT}`。トークンが使えない環境ではこのスキル定義ファイルの位置から辿る）の `.learning/config` を確認する。存在しなければ、セッション観察に使う分析エンジンをユーザーに確認して作成する:
-
-1. 選択肢 `claude` / `codex` / `copilot` を提示する（AskUserQuestion ツールが利用可能ならそれを使い、なければ対話で確認する）
-2. 選択に応じて `.learning/config` を書き込む:
-   - claude → `engine=claude` と `model=haiku`
-   - copilot → `engine=copilot` と `model=claude-haiku-4.5`
-   - codex → `engine=codex` のみ（モデルは CLI 既定に任せる）
-3. 「保存しました。以降のセッション終了時から観察が有効になります」と伝えて本来の処理を続行する
+プラグインルート（`${CLAUDE_PLUGIN_ROOT}`。トークンが使えない環境ではこのスキル定義ファイルの位置から辿る）に `.learning/config` が存在しなければ、`/learning:setup` を実行（SlashCommand ツール）してから本来の処理を続行する。
 
 ## 前提
 
-- 一覧に使う frontmatter: `id`, `type`, `confidence`, `evidence_count`, `status`（スキーマの全体は `skills/review/SKILL.md` と observer プロンプトを参照）
+- Instinct の置き場所: プロジェクト直下の `.learning/instincts/`。ただし git worktree 内のセッションではメイン作業ツリーに集約されるため、`git rev-parse --path-format=absolute --git-common-dir` が返すパスの親ディレクトリをプロジェクトルートとして扱う
+- 一覧に使う frontmatter: `id`, `type`, `confidence`, `evidence_count`, `status`（スキーマの全体は `${CLAUDE_PLUGIN_ROOT}/skills/review/SKILL.md` と observer プロンプト `${CLAUDE_PLUGIN_ROOT}/hooks/prompts/observer.md` を参照）
 - 昇格資格: `status: active` かつ `confidence >= 0.7`
 - instincts ディレクトリが存在しない・空の場合は「まだ Instinct が蓄積されていません。セッションを重ねると自動的に蓄積されます」と report して終了する
 

@@ -165,7 +165,7 @@ arg_in_engine() {
   [ ! -f "$TMP/engine-args.txt" ]
   [[ "$output" == *"unknown engine: myengine"* ]]
   [[ "$output" == *"claude, codex, copilot"* ]]
-  [[ "$output" == *"/learning:status"* ]]
+  [[ "$output" == *"/learning:setup"* ]]
 }
 
 @test "{{SESSION_ID}} が第3引数で置換される" {

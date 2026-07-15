@@ -75,6 +75,7 @@ hooks は experimental のため設定での有効化と、plugin hook の trust
 - 蓄積は自動（10 ターン以上のセッション終了時に分析が走る）
 - `/learning:status` — Instinct の一覧と昇格資格の確認
 - `/learning:review` — 昇格提案を 1 件ずつ承認 / 却下 / 保留
+- `/learning:setup` — 分析エンジンの設定・再設定（初回は status / review から自動で委譲される）
 
 ## エンジン設定
 
@@ -93,7 +94,7 @@ engine=claude
 model=haiku
 ```
 
-`engine` に上記以外の文字列を書くと、観察は実行されず有効なエンジン一覧の案内が `logs/observer.log` に出力される（`/learning:status` で再設定できる）。プラグイン更新でキャッシュが入れ替わると設定は消え、次回コマンド実行時に再質問される。
+`engine` に上記以外の文字列を書くと、観察は実行されず有効なエンジン一覧の案内が `logs/observer.log` に出力される（`/learning:setup` で再設定できる）。プラグイン更新でキャッシュが入れ替わると設定は消え、次回コマンド実行時に再質問される。
 
 ## 設定（環境変数）
 

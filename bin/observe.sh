@@ -62,7 +62,7 @@ case "$engine" in
       --allow-tool 'write(.learning/instincts/**)' --no-ask-user -s
     ;;
   *)
-    echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] unknown engine: $engine (valid: claude, codex, copilot); run /learning:status to fix the config"
+    echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] unknown engine: $engine (valid: claude, codex, copilot); run /learning:setup to fix the config"
     exit 0
     ;;
 esac || echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] observer failed: transcript=$transcript_path"
