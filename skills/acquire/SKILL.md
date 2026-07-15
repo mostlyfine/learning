@@ -1,10 +1,10 @@
 ---
-name: review
+name: acquire
 description: 蓄積された Instinct を1件ずつ承認 / 却下 / 保留し、CLAUDE.md や skill・agent へ反映する昇格レビューを行う。「instinct を昇格して」「Instinct をレビュー」「学習内容を昇格して」だけでなく、「instinct の棚卸しをしたい」「溜まった instinct を整理して」「昇格提案を見せて」のように、蓄積した Instinct を承認・却下しながら整理したいという意図があれば実行する（GitHub の PR レビューやコードレビュー、人事・研修のレビューには使わない）。
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git rev-parse:*), SlashCommand(/learning:setup), Edit(.learning/instincts/**), Edit(.claude/rules/**), Edit(.claude/skills/**), Edit(.claude/agents/**), Edit(CLAUDE.md), Write(.claude/rules/**), Write(.claude/skills/**), Write(.claude/agents/**)
 ---
 
-# /learning:review — Instinct の昇格提案
+# /learning:acquire — Instinct の昇格提案
 
 蓄積された Instinct（`.learning/instincts/*.md`）のうち信頼度が閾値に達したものを、ユーザー承認のもとで昇格させる。
 
@@ -31,7 +31,7 @@ allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git rev-parse:*), SlashCo
 4. **1件ずつ**ユーザーに提示し、承認 / 却下 / 保留 を確認する（AskUserQuestion ツールが利用可能ならそれを使い、なければ対話で尋ねる）。質問文には Instinct の Trigger/Action、evidence_count、変更案の要約を含める
    - **承認** → 変更を適用し、Instinct の frontmatter を `status: promoted` に更新、`promoted_to: <適用先パス>` を追記する
    - **却下** → `status: rejected` に更新する（observer が同種を再作成しなくなる）
-   - **保留** → 何も変更しない（次回の review に持ち越し）
+   - **保留** → 何も変更しない（次回の /learning:acquire 実行に持ち越し）
 5. 全件処理後、適用結果のサマリ（承認/却下/保留の件数と適用先パス）を表示する
 
 ## 制約
