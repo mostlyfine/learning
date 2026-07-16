@@ -1,21 +1,18 @@
 #!/usr/bin/env bats
 
+load helpers
+
 setup() {
-  TMP="$(mktemp -d)"
+  setup_plugin_scaffold
   # プラグインは対象プロジェクトの外（プラグインキャッシュ相当）に置かれる。
-  # 実プラグインと同じ <plugin>/hooks/{scripts,prompts} 構成にする
-  PLUGIN="$TMP/plugin"
-  LEARNING="$PLUGIN/hooks"
+  # 実プラグインと同じ <plugin>/hooks/prompts 構成にする
   DATA="$TMP/project/.learning"
-  mkdir -p "$LEARNING/scripts" "$LEARNING/prompts" "$PLUGIN/.learning" "$DATA" "$TMP/bin"
-  cp "$BATS_TEST_DIRNAME/../hooks/scripts/observe.sh" \
-    "$LEARNING/scripts/observe.sh"
-  chmod +x "$LEARNING/scripts/observe.sh"
-  # エンジン設定（メモリー）: model 行なしの claude は haiku 既定
-  printf 'engine=claude\n' >"$PLUGIN/.learning/config"
+  mkdir -p "$PLUGIN/hooks/prompts" "$DATA" "$TMP/bin"
+  cp "$BATS_TEST_DIRNAME/../bin/observe.sh" "$BIN/observe.sh"
+  chmod +x "$BIN/observe.sh"
   # プロンプトのフィクスチャ（プレースホルダ置換を検証できる最小内容）
   printf 'T={{TRANSCRIPT_PATH}} I={{INSTINCTS_DIR}} D={{TODAY}} S={{SESSION_ID}}\n' \
-    >"$LEARNING/prompts/observer.md"
+    >"$PLUGIN/hooks/prompts/observer.md"
   # claude スタブ: 引数と環境変数を記録する
   cat >"$TMP/bin/claude" <<'STUB'
 #!/usr/bin/env bash
@@ -33,7 +30,7 @@ STUB
 teardown() { rm -rf "$TMP"; }
 
 run_observe() {
-  run "$LEARNING/scripts/observe.sh" "$TMP/transcript.jsonl" "$TMP/project"
+  run "$BIN/observe.sh" "$TMP/transcript.jsonl" "$TMP/project"
 }
 
 # 記録された引数リストから、指定フラグの次の値を返す
@@ -109,7 +106,7 @@ arg_in_engine() {
 }
 
 @test "プロンプトファイルが存在しない場合は claude を起動せずロックを削除する" {
-  rm -f "$LEARNING/prompts/observer.md"
+  rm -f "$PLUGIN/hooks/prompts/observer.md"
   run_observe
   [ "$status" -eq 0 ]
   [ ! -f "$TMP/claude-args.txt" ]
@@ -124,6 +121,15 @@ arg_in_engine() {
   [ ! -f "$TMP/claude-args.txt" ]
   [ ! -f "$DATA/.lock" ]
   [[ "$output" == *"engine not configured"* ]]
+  [[ "$output" == *"/learning:setup"* ]]
+}
+
+@test "lib.sh が欠落していてもエンジンを起動せず exit 0 する" {
+  rm -f "$BIN/lib.sh"
+  run_observe
+  [ "$status" -eq 0 ]
+  [ ! -f "$TMP/claude-args.txt" ]
+  [[ "$output" == *"lib.sh missing"* ]]
 }
 
 @test "engine=codex: codex exec が sandbox 付き・model なしで起動される" {
@@ -157,19 +163,28 @@ arg_in_engine() {
   [ "$(cat "$TMP/engine-env.txt")" = "1" ]
 }
 
-@test "既知以外のエンジンはコマンドとして素通しで起動される" {
+@test "未知のエンジンは実行せず有効値の案内をログに出して exit 0 する" {
   make_engine_stub myengine
   printf 'engine=myengine\n' >"$PLUGIN/.learning/config"
   run_observe
   [ "$status" -eq 0 ]
   [ ! -f "$TMP/claude-args.txt" ]
-  [ -f "$TMP/engine-args.txt" ]
-  [ "$(cat "$TMP/engine-env.txt")" = "1" ]
-  grep -q "T=$TMP/transcript.jsonl" "$TMP/engine-args.txt"
+  [ ! -f "$TMP/engine-args.txt" ]
+  [[ "$output" == *"unknown engine: myengine"* ]]
+  [[ "$output" == *"claude, codex, copilot"* ]]
+  [[ "$output" == *"/learning:setup"* ]]
+}
+
+@test "未知のエンジンでは instincts ディレクトリや .gitignore を作らない" {
+  printf 'engine=myengine\n' >"$PLUGIN/.learning/config"
+  run_observe
+  [ "$status" -eq 0 ]
+  [ ! -d "$DATA/instincts" ]
+  [ ! -f "$DATA/.gitignore" ]
 }
 
 @test "{{SESSION_ID}} が第3引数で置換される" {
-  run "$LEARNING/scripts/observe.sh" "$TMP/transcript.jsonl" "$TMP/project" "sess-42"
+  run "$BIN/observe.sh" "$TMP/transcript.jsonl" "$TMP/project" "sess-42"
   prompt="$(arg_after -p)"
   [[ "$prompt" == *"S=sess-42"* ]]
 }

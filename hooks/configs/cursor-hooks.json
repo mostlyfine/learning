@@ -3,7 +3,7 @@
   "hooks": {
     "stop": [
       {
-        "command": "/ABSOLUTE/PATH/TO/learning-skills/hooks/scripts/session-end.sh"
+        "command": "/ABSOLUTE/PATH/TO/learning-skills/bin/session-end.sh"
       }
     ]
   }

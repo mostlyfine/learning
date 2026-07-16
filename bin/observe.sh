@@ -5,8 +5,11 @@
 set -u
 
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-base_dir=$(cd "$script_dir/.." && pwd)
-plugin_root=$(cd "$base_dir/.." && pwd)
+source "$script_dir/lib.sh" 2>/dev/null || {
+  echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] lib.sh missing: $script_dir/lib.sh"
+  exit 0
+}
+plugin_root=$(resolve_plugin_root "$script_dir")
 
 transcript_path="${1:?transcript path required}"
 project_dir="${2:?project dir required}"
@@ -17,11 +20,21 @@ data_dir="$project_dir/.learning"
 lock_file="$data_dir/.lock"
 trap 'rm -f "$lock_file"' EXIT
 
+# エンジンとモデルはプラグイン内の設定ファイル（/learning:setup で作成される）から読む。
+# 誤設定時にディレクトリ作成やプロンプト処理の副作用を残さないよう最初に検証する
+config_file="$plugin_root/.learning/config"
+engine=$(read_config_value "$config_file" engine)
+model=$(read_config_value "$config_file" model)
+if ! is_valid_engine "$engine"; then
+  log_engine_guidance "$engine"
+  exit 0
+fi
+
 instincts_dir="$data_dir/instincts"
 mkdir -p "$instincts_dir"
 [ -f "$data_dir/.gitignore" ] || echo '*' >"$data_dir/.gitignore"
 
-prompt_file="$base_dir/prompts/observer.md"
+prompt_file="$plugin_root/hooks/prompts/observer.md"
 if [ ! -f "$prompt_file" ]; then
   echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] observer prompt missing: $prompt_file"
   exit 0
@@ -33,22 +46,10 @@ prompt="${prompt//\{\{INSTINCTS_DIR\}\}/$instincts_dir}"
 prompt="${prompt//\{\{TODAY\}\}/$(date +%F)}"
 prompt="${prompt//\{\{SESSION_ID\}\}/$session_id}"
 
-# エンジンとモデルはプラグイン内の設定ファイル（/learning:status の初回セットアップで
-# 作成されるメモリー）から読む
-config_file="$plugin_root/.learning/config"
-engine=""
-model=""
-if [ -f "$config_file" ]; then
-  engine=$(sed -n 's/^engine=//p' "$config_file" | tail -1)
-  model=$(sed -n 's/^model=//p' "$config_file" | tail -1)
-fi
-if [ -z "$engine" ]; then
-  echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] engine not configured; run /learning:status to set up"
-  exit 0
-fi
-
 cd "$project_dir" || exit 0
-# ${model:+...} は意図的に unquoted（空なら引数ごと消える）
+# ${model:+...} は意図的に unquoted（空なら引数ごと消える）。
+# エンジン別の既定モデルは skills/setup/SKILL.md の手順と README のエンジン表にも
+# 記載がある（変更時は3箇所を同期する）
 case "$engine" in
   claude)
     LEARNING_SKILLS_OBSERVER=1 claude -p "$prompt" --model "${model:-haiku}" \
@@ -63,9 +64,9 @@ case "$engine" in
       --allow-tool 'write(.learning/instincts/**)' --no-ask-user -s
     ;;
   *)
-    # 未知のエンジンはコマンドとしてそのまま実行する（意図的に word split。
-    # モデル指定やツール許可のフラグはエンジン文字列に含めるユーザー責任）
-    LEARNING_SKILLS_OBSERVER=1 $engine "$prompt"
+    # is_valid_engine 通過後は到達しない安全弁（VALID_ENGINES と case 腕の乖離検出用）
+    log_engine_guidance "$engine"
+    exit 0
     ;;
 esac || echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] observer failed: transcript=$transcript_path"
 exit 0
