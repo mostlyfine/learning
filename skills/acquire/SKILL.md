@@ -10,7 +10,7 @@ allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git rev-parse:*), SlashCo
 
 ## 初回セットアップへの委譲（エンジン設定が無い場合のみ）
 
-プラグインルート（`${CLAUDE_PLUGIN_ROOT}`。トークンが使えない環境ではこのスキル定義ファイルの位置から辿る）に `.learning/config` が存在しなければ、`/learning:setup` を実行（SlashCommand ツール。解決できない場合は Skill ツールで `learning:setup` を起動する）してから本来の処理を続行する。
+プロジェクトルート（Instinct の置き場所と同じ。worktree 内では「前提」のとおりメイン作業ツリー）に `.learning/config` が存在しなければ、`/learning:setup` を実行（SlashCommand ツール。解決できない場合は Skill ツールで `learning:setup` を起動する）してから本来の処理を続行する。
 
 ## 前提
 

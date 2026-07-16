@@ -20,9 +20,9 @@ data_dir="$project_dir/.learning"
 lock_file="$data_dir/.lock"
 trap 'rm -f "$lock_file"' EXIT
 
-# エンジンとモデルはプラグイン内の設定ファイル（/learning:setup で作成される）から読む。
+# エンジンとモデルはプロジェクトの .learning/config（/learning:setup で作成される）から読む。
 # 誤設定時にディレクトリ作成やプロンプト処理の副作用を残さないよう最初に検証する
-config_file="$plugin_root/.learning/config"
+config_file="$data_dir/config"
 engine=$(read_config_value "$config_file" engine)
 model=$(read_config_value "$config_file" model)
 if ! is_valid_engine "$engine"; then
@@ -52,8 +52,10 @@ cd "$project_dir" || exit 0
 # 記載がある（変更時は3箇所を同期する）
 case "$engine" in
   claude)
+    # Write(path) ルールはファイル許可チェックにマッチしない（Edit(path) ルールが
+    # Write を含む全ファイル編集ツールを許可する）ため Edit のみ指定する
     LEARNING_SKILLS_OBSERVER=1 claude -p "$prompt" --model "${model:-haiku}" \
-      --allowedTools "Read,Glob,Grep,Write(.learning/instincts/**),Edit(.learning/instincts/**)"
+      --allowedTools "Read,Glob,Grep,Edit(.learning/instincts/**)"
     ;;
   codex)
     LEARNING_SKILLS_OBSERVER=1 codex exec --skip-git-repo-check --sandbox workspace-write \

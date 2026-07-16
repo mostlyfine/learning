@@ -8,6 +8,8 @@ setup() {
   # 実プラグインと同じ <plugin>/hooks/prompts 構成にする
   DATA="$TMP/project/.learning"
   mkdir -p "$PLUGIN/hooks/prompts" "$DATA" "$TMP/bin"
+  # エンジン設定はプロジェクト側の .learning/config（model 行なしの claude は haiku 既定）
+  printf 'engine=claude\n' >"$DATA/config"
   cp "$BATS_TEST_DIRNAME/../bin/observe.sh" "$BIN/observe.sh"
   chmod +x "$BIN/observe.sh"
   # プロンプトのフィクスチャ（プレースホルダ置換を検証できる最小内容）
@@ -58,11 +60,11 @@ arg_in_engine() {
   [ "$status" -eq 0 ]
   grep -qx -- "-p" "$TMP/claude-args.txt"
   [ "$(arg_after --model)" = "haiku" ]
-  [ "$(arg_after --allowedTools)" = "Read,Glob,Grep,Write(.learning/instincts/**),Edit(.learning/instincts/**)" ]
+  [ "$(arg_after --allowedTools)" = "Read,Glob,Grep,Edit(.learning/instincts/**)" ]
 }
 
 @test "config の model 行でモデルを上書きできる" {
-  printf 'engine=claude\nmodel=opus\n' >"$PLUGIN/.learning/config"
+  printf 'engine=claude\nmodel=opus\n' >"$DATA/config"
   run_observe
   [ "$(arg_after --model)" = "opus" ]
 }
@@ -115,7 +117,7 @@ arg_in_engine() {
 }
 
 @test "config が無ければエンジンを起動せずログを出してロックを削除する" {
-  rm -f "$PLUGIN/.learning/config"
+  rm -f "$DATA/config"
   run_observe
   [ "$status" -eq 0 ]
   [ ! -f "$TMP/claude-args.txt" ]
@@ -134,7 +136,7 @@ arg_in_engine() {
 
 @test "engine=codex: codex exec が sandbox 付き・model なしで起動される" {
   make_engine_stub codex
-  printf 'engine=codex\n' >"$PLUGIN/.learning/config"
+  printf 'engine=codex\n' >"$DATA/config"
   run_observe
   [ "$status" -eq 0 ]
   [ ! -f "$TMP/claude-args.txt" ]
@@ -147,14 +149,14 @@ arg_in_engine() {
 
 @test "engine=codex: config の model 行があれば --model が付く" {
   make_engine_stub codex
-  printf 'engine=codex\nmodel=gpt-5.4-mini\n' >"$PLUGIN/.learning/config"
+  printf 'engine=codex\nmodel=gpt-5.4-mini\n' >"$DATA/config"
   run_observe
   [ "$(arg_in_engine --model)" = "gpt-5.4-mini" ]
 }
 
 @test "engine=copilot: copilot -p が --no-ask-user と --model 付きで起動される" {
   make_engine_stub copilot
-  printf 'engine=copilot\nmodel=claude-haiku-4.5\n' >"$PLUGIN/.learning/config"
+  printf 'engine=copilot\nmodel=claude-haiku-4.5\n' >"$DATA/config"
   run_observe
   [ "$status" -eq 0 ]
   grep -qx -- "-p" "$TMP/engine-args.txt"
@@ -165,7 +167,7 @@ arg_in_engine() {
 
 @test "未知のエンジンは実行せず有効値の案内をログに出して exit 0 する" {
   make_engine_stub myengine
-  printf 'engine=myengine\n' >"$PLUGIN/.learning/config"
+  printf 'engine=myengine\n' >"$DATA/config"
   run_observe
   [ "$status" -eq 0 ]
   [ ! -f "$TMP/claude-args.txt" ]
@@ -176,7 +178,7 @@ arg_in_engine() {
 }
 
 @test "未知のエンジンでは instincts ディレクトリや .gitignore を作らない" {
-  printf 'engine=myengine\n' >"$PLUGIN/.learning/config"
+  printf 'engine=myengine\n' >"$DATA/config"
   run_observe
   [ "$status" -eq 0 ]
   [ ! -d "$DATA/instincts" ]

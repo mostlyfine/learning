@@ -49,13 +49,12 @@ main() {
   fi
 
   # ランタイムデータは .claude 外に置く（headless の claude は .claude 配下に書き込めない）
-  local script_dir plugin_root data_dir lock_file state_file now
+  local script_dir data_dir lock_file state_file now
   script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
   source "$script_dir/lib.sh" 2>/dev/null || {
     echo "learning-skills: $script_dir/lib.sh not found; observation disabled" >&2
     return 0
   }
-  plugin_root=$(resolve_plugin_root "$script_dir")
   data_dir="$project_root/.learning"
   lock_file="$data_dir/.lock"
   state_file="$data_dir/analyzed.tsv"
@@ -65,7 +64,7 @@ main() {
   # observer.log に残して何もしない（いずれも analyzed.tsv に記録して学習機会を
   # 失うのを防ぐため増分ガードより前で判定する）。設定は /learning:setup で作られる
   local config_file engine
-  config_file="$plugin_root/.learning/config"
+  config_file="$data_dir/config"
   [ -f "$config_file" ] || return 0
   engine=$(read_config_value "$config_file" engine)
   if ! is_valid_engine "$engine"; then

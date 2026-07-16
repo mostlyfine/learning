@@ -7,8 +7,6 @@ setup_plugin_scaffold() {
   TMP="$(cd "$(mktemp -d)" && pwd -P)"
   PLUGIN="$TMP/plugin"
   BIN="$PLUGIN/bin"
-  mkdir -p "$BIN" "$PLUGIN/.learning"
+  mkdir -p "$BIN"
   cp "$BATS_TEST_DIRNAME/../bin/lib.sh" "$BIN/lib.sh"
-  # エンジン設定（メモリー）: model 行なしの claude は haiku 既定
-  printf 'engine=claude\n' >"$PLUGIN/.learning/config"
 }
