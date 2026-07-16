@@ -1,7 +1,7 @@
 ---
 name: recall
 description: learning プラグインがこれまでに何を学習したかを確認するとき必ず使う（読み取り専用）。蓄積された Instinct（学習で得た知見）の一覧表示と、昇格資格のある Instinct の確認を行う。「learning recall」「learning の状態」「学習状況を見せて」のような直接の呼びかけに加え、蓄積された instinct・知見・学習内容を見たい、学習が進んでいるか知りたい、昇格できそうなものを確認したい、といった learning プラグインの現状把握を求めるあらゆる質問で実行する。エンジン設定が未作成なら初回セットアップ（/learning:setup）へ委譲する。
-allowed-tools: Read, Glob, Grep, Bash(git rev-parse:*), SlashCommand(/learning:setup)
+allowed-tools: Read, Glob, Grep, Bash(git rev-parse:*), SlashCommand(/learning:setup), Skill(learning:setup)
 ---
 
 # /learning:recall — Instinct の一覧表示
@@ -10,7 +10,7 @@ allowed-tools: Read, Glob, Grep, Bash(git rev-parse:*), SlashCommand(/learning:s
 
 ## 初回セットアップへの委譲（エンジン設定が無い場合のみ）
 
-プラグインルート（`${CLAUDE_PLUGIN_ROOT}`。トークンが使えない環境ではこのスキル定義ファイルの位置から辿る）に `.learning/config` が存在しなければ、`/learning:setup` を実行（SlashCommand ツール）してから本来の処理を続行する。
+プラグインルート（`${CLAUDE_PLUGIN_ROOT}`。トークンが使えない環境ではこのスキル定義ファイルの位置から辿る）に `.learning/config` が存在しなければ、`/learning:setup` を実行（SlashCommand ツール。解決できない場合は Skill ツールで `learning:setup` を起動する）してから本来の処理を続行する。
 
 ## 前提
 

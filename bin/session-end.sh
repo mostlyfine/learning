@@ -51,16 +51,28 @@ main() {
   # ランタイムデータは .claude 外に置く（headless の claude は .claude 配下に書き込めない）
   local script_dir plugin_root data_dir lock_file state_file now
   script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-  source "$script_dir/lib.sh"
+  source "$script_dir/lib.sh" 2>/dev/null || {
+    echo "learning-skills: $script_dir/lib.sh not found; observation disabled" >&2
+    return 0
+  }
   plugin_root=$(resolve_plugin_root "$script_dir")
   data_dir="$project_root/.learning"
   lock_file="$data_dir/.lock"
   state_file="$data_dir/analyzed.tsv"
   now=$(date +%s)
 
-  # エンジン未設定なら何もしない（analyzed.tsv に記録して学習機会を失うのを防ぐため
-  # 増分ガードより前で判定する）。設定は /learning:recall の初回セットアップで作られる
-  [ -f "$plugin_root/.learning/config" ] || return 0
+  # エンジン未設定なら何もしない。config はあるがエンジンが空・不正なら、案内だけ
+  # observer.log に残して何もしない（いずれも analyzed.tsv に記録して学習機会を
+  # 失うのを防ぐため増分ガードより前で判定する）。設定は /learning:setup で作られる
+  local config_file engine
+  config_file="$plugin_root/.learning/config"
+  [ -f "$config_file" ] || return 0
+  engine=$(read_config_value "$config_file" engine)
+  if ! is_valid_engine "$engine"; then
+    mkdir -p "$data_dir/logs"
+    log_engine_guidance "$engine" >>"$data_dir/logs/observer.log"
+    return 0
+  fi
 
   # 増分ガード: ターン単位で発火するイベント（Stop/agentStop/stop）による
   # 同一 transcript の再分析は、前回分析から MIN_TURNS 以上増えたときだけ許す

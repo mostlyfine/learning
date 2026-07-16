@@ -249,3 +249,43 @@ STUB
   [ "$status" -eq 0 ]
   [ ! -f "$PLUGIN/observe-invoked.txt" ]
 }
+
+@test "unknown engine: analyzed.tsv に記録せず起動もせず、案内が observer.log に残る" {
+  t=$(make_transcript 12)
+  printf 'engine=typo\n' >"$PLUGIN/.learning/config"
+  run_hook "$(hook_input "$t" "$PROJECT")"
+  [ "$status" -eq 0 ]
+  [ ! -f "$PLUGIN/observe-invoked.txt" ]
+  [ ! -f "$DATA/analyzed.tsv" ]
+  grep -q "unknown engine: typo" "$DATA/logs/observer.log"
+  grep -q "/learning:setup" "$DATA/logs/observer.log"
+}
+
+@test "unknown engine のセッションは設定修正後に分析される（学習機会を失わない）" {
+  t=$(make_transcript 12)
+  printf 'engine=typo\n' >"$PLUGIN/.learning/config"
+  run_hook "$(hook_input "$t" "$PROJECT")"
+  [ ! -f "$PLUGIN/observe-invoked.txt" ]
+  printf 'engine=claude\n' >"$PLUGIN/.learning/config"
+  run_hook "$(hook_input "$t" "$PROJECT")"
+  [ -f "$PLUGIN/observe-invoked.txt" ]
+}
+
+@test "config の engine 行が空でも起動せず未設定の案内が残る" {
+  t=$(make_transcript 12)
+  printf 'model=haiku\n' >"$PLUGIN/.learning/config"
+  run_hook "$(hook_input "$t" "$PROJECT")"
+  [ "$status" -eq 0 ]
+  [ ! -f "$PLUGIN/observe-invoked.txt" ]
+  [ ! -f "$DATA/analyzed.tsv" ]
+  grep -q "engine not configured" "$DATA/logs/observer.log"
+}
+
+@test "lib.sh が欠落していても exit 0 で観察を諦める" {
+  t=$(make_transcript 12)
+  rm -f "$BIN/lib.sh"
+  run_hook "$(hook_input "$t" "$PROJECT")"
+  [ "$status" -eq 0 ]
+  [ ! -f "$PLUGIN/observe-invoked.txt" ]
+  [[ "$output" == *"observation disabled"* ]]
+}

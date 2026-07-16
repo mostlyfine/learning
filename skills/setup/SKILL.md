@@ -1,7 +1,7 @@
 ---
 name: setup
 description: 学習プラグインが観察に使う分析エンジン（claude / codex / copilot）の初回セットアップと再設定を行う。「learning のセットアップ」「観察エンジンを変更したい」、observer ログに unknown engine が出たときの修復、および recall / acquire からの委譲で実行する。
-allowed-tools: Read, Glob, Grep, AskUserQuestion, Write(.learning/config), Edit(.learning/config)
+allowed-tools: Read, Glob, Grep, AskUserQuestion, Write(//**/.learning/config), Edit(//**/.learning/config)
 ---
 
 # /learning:setup — 分析エンジンの設定

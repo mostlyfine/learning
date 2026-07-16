@@ -121,6 +121,15 @@ arg_in_engine() {
   [ ! -f "$TMP/claude-args.txt" ]
   [ ! -f "$DATA/.lock" ]
   [[ "$output" == *"engine not configured"* ]]
+  [[ "$output" == *"/learning:setup"* ]]
+}
+
+@test "lib.sh が欠落していてもエンジンを起動せず exit 0 する" {
+  rm -f "$BIN/lib.sh"
+  run_observe
+  [ "$status" -eq 0 ]
+  [ ! -f "$TMP/claude-args.txt" ]
+  [[ "$output" == *"lib.sh missing"* ]]
 }
 
 @test "engine=codex: codex exec が sandbox 付き・model なしで起動される" {
@@ -164,6 +173,14 @@ arg_in_engine() {
   [[ "$output" == *"unknown engine: myengine"* ]]
   [[ "$output" == *"claude, codex, copilot"* ]]
   [[ "$output" == *"/learning:setup"* ]]
+}
+
+@test "未知のエンジンでは instincts ディレクトリや .gitignore を作らない" {
+  printf 'engine=myengine\n' >"$PLUGIN/.learning/config"
+  run_observe
+  [ "$status" -eq 0 ]
+  [ ! -d "$DATA/instincts" ]
+  [ ! -f "$DATA/.gitignore" ]
 }
 
 @test "{{SESSION_ID}} が第3引数で置換される" {
