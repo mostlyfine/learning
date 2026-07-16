@@ -5,7 +5,9 @@
 set -euo pipefail
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
-work=$(mktemp -d)
+# macOS の mktemp は /var/folders（/private/var へのシンボリックリンク）を返し、
+# cwd 相対の許可ルールが絶対パスの書き込みにマッチしなくなるため物理パスに正規化する
+work=$(cd "$(mktemp -d)" && pwd -P)
 trap 'echo "作業ディレクトリ: ${work}（確認後に手動で削除してください）"' EXIT
 
 project="$work/project"
@@ -14,14 +16,13 @@ mkdir -p "$project/.claude" "$project/.learning"
 # 実レイアウトどおり <plugin_root>/bin と <plugin_root>/hooks を再現する
 cp -R "$repo_root/bin" "$work/bin"
 cp -R "$repo_root/hooks" "$work/hooks"
-# エンジン設定（メモリー）: bin から見たプラグインルートは $work
-mkdir -p "$work/.learning"
-printf 'engine=claude\nmodel=haiku\n' >"$work/.learning/config"
+# エンジン設定はプロジェクト側の .learning/config
+printf 'engine=claude\nmodel=haiku\n' >"$project/.learning/config"
 
 echo "=== observer を実行中（engine=claude, model=haiku）==="
 date +%s >"$project/.learning/.lock"
 "$work/bin/observe.sh" \
-  "$repo_root/tests/fixtures/sample-transcript.jsonl" "$project"
+  "$repo_root/tests/fixtures/sample-transcript.jsonl" "$project" "verify-sess-1"
 
 echo "=== 生成された Instinct ==="
 ls -la "$project/.learning/instincts/" || true
@@ -33,8 +34,9 @@ done
 
 echo "=== 別セッション相当の transcript で再実行（強化の検証） ==="
 date +%s >"$project/.learning/.lock"
+# 強化（confidence 加算）は別セッションでの再観察が条件のため、session id を変えて渡す
 "$work/bin/observe.sh" \
-  "$repo_root/tests/fixtures/sample-transcript-2.jsonl" "$project"
+  "$repo_root/tests/fixtures/sample-transcript-2.jsonl" "$project" "verify-sess-2"
 
 echo "=== 強化後の frontmatter ==="
 grep -H -E '^(confidence|evidence_count):' "$project/.learning/instincts/"*.md || true

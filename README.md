@@ -79,7 +79,7 @@ hooks は experimental のため設定での有効化と、plugin hook の trust
 
 ## エンジン設定
 
-観察に使う分析エンジンは初回に一度だけ質問され、プラグイン内の `.learning/config` に保存される（2回目以降は自動適用）。`/learning:recall` か `/learning:acquire` を最初に実行したときにセットアップが走り、それまでセッション観察は動かない。
+観察に使う分析エンジンはプロジェクトごとに初回に一度だけ質問され、プロジェクト直下の `.learning/config` に保存される（2回目以降は自動適用。プラグインを更新しても消えない）。`/learning:recall` か `/learning:acquire` を最初に実行したときにセットアップが走り、それまでセッション観察は動かない。
 
 | エンジン | 既定モデル | 実行形 |
 |---|---|---|
@@ -87,14 +87,14 @@ hooks は experimental のため設定での有効化と、plugin hook の trust
 | `codex` | CLI 既定 | `codex exec --sandbox workspace-write` |
 | `copilot` | `claude-haiku-4.5` | `copilot -p --no-ask-user` |
 
-コマンドが使えない環境（Cursor の手動 hook 登録等）では、プラグインルートに `.learning/config` を手で作る:
+コマンドが使えない環境（Cursor の手動 hook 登録等）では、プロジェクト直下に `.learning/config` を手で作る:
 
 ```
 engine=claude
 model=haiku
 ```
 
-`engine` に上記以外の文字列を書くと、観察は実行されず有効なエンジン一覧の案内が `.learning/logs/observer.log` に出力される（`/learning:setup` で再設定できる）。プラグイン更新でキャッシュが入れ替わると設定は消え、次回コマンド実行時に再質問される。
+`engine` に上記以外の文字列を書くと、観察は実行されず有効なエンジン一覧の案内が `.learning/logs/observer.log` に出力される（`/learning:setup` で再設定できる）。
 
 ## 設定（環境変数）
 
