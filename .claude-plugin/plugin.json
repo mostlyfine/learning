@@ -1,6 +1,6 @@
 {
   "name": "learning",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "セッションを自動観察して Instinct を蓄積し、承認制で CLAUDE.md / skill / agent に昇格させる自己学習プラグイン",
   "author": { "name": "mostlyfine" },
   "repository": "https://github.com/mostlyfine/learning",
