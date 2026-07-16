@@ -1,7 +1,7 @@
 ---
 name: acquire
 description: 蓄積された Instinct を1件ずつ承認 / 却下 / 保留し、CLAUDE.md や skill・agent へ反映する昇格レビューを行う。「instinct を昇格して」「Instinct をレビュー」「学習内容を昇格して」だけでなく、「instinct の棚卸しをしたい」「溜まった instinct を整理して」「昇格提案を見せて」のように、蓄積した Instinct を承認・却下しながら整理したいという意図があれば実行する（GitHub の PR レビューやコードレビュー、人事・研修のレビューには使わない）。
-allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git rev-parse:*), SlashCommand(/learning:setup), Skill(learning:setup), Edit(//**/.learning/instincts/**), Edit(.claude/rules/**), Edit(.claude/skills/**), Edit(.claude/agents/**), Edit(CLAUDE.md), Write(.claude/rules/**), Write(.claude/skills/**), Write(.claude/agents/**)
+allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git rev-parse:*), SlashCommand(/learning:setup), Skill(learning:setup), Edit(.learning/instincts/**), Edit(.claude/rules/**), Edit(.claude/skills/**), Edit(.claude/agents/**), Edit(CLAUDE.md), Write(.claude/rules/**), Write(.claude/skills/**), Write(.claude/agents/**)
 ---
 
 # /learning:acquire — Instinct の昇格提案
@@ -14,7 +14,7 @@ allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git rev-parse:*), SlashCo
 
 ## 前提
 
-- Instinct の置き場所: プロジェクト直下の `.learning/instincts/`。ただし git worktree 内のセッションではメイン作業ツリーに集約されるため、`git rev-parse --path-format=absolute --git-common-dir` が返すパスの親ディレクトリをプロジェクトルートとして扱う
+- Instinct の置き場所: プロジェクト直下の `.learning/instincts/`。ただし git worktree 内のセッションではメイン作業ツリーに集約されるため、`git rev-parse --path-format=absolute --git-common-dir` が返すパスの親ディレクトリをプロジェクトルートとして扱う（メインツリー側の編集には確認プロンプトが出るが正常な動作）
 - Instinct ファイルの frontmatter: `id`, `type`(correction|error-solution|workflow), `status`(active|promoted|rejected), `confidence`, `evidence_count`, `promote_to`(rules|instructions|skill|agent), `created`, `updated`
 - 昇格資格: `status: active` かつ `confidence >= 0.7`
 - instincts ディレクトリが存在しない・空の場合は「まだ Instinct が蓄積されていません。セッションを重ねると自動的に蓄積されます」と report して終了する

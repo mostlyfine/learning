@@ -1,7 +1,7 @@
 ---
 name: setup
 description: 学習プラグインが観察に使う分析エンジン（claude / codex / copilot）の初回セットアップと再設定を行う。「learning のセットアップ」「観察エンジンを変更したい」、observer ログに unknown engine が出たときの修復、および recall / acquire からの委譲で実行する。
-allowed-tools: Read, Glob, Grep, AskUserQuestion, Write(//**/.learning/config), Edit(//**/.learning/config)
+allowed-tools: Read, Glob, Grep, AskUserQuestion, Write(.learning/config), Edit(.learning/config)
 ---
 
 # /learning:setup — 分析エンジンの設定
@@ -19,5 +19,6 @@ allowed-tools: Read, Glob, Grep, AskUserQuestion, Write(//**/.learning/config), 
 
 ## 備考
 
+- marketplace インストールではプラグインルートがプロジェクト外（プラグインキャッシュ）にあるため、config の書き込みに確認プロンプトが出る。これは正常な動作であり、プロンプトを避ける目的でプロジェクト直下など別の場所に保存してはならない
 - `engine` に上記以外の文字列があると観察は実行されず、有効値の案内がプロジェクトの `.learning/logs/observer.log` に出る
 - プラグイン更新でキャッシュが入れ替わると設定は消え、次回 `/learning:recall` か `/learning:acquire` の実行時にこのセットアップへ委譲される
