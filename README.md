@@ -60,11 +60,11 @@ hooks は experimental のため設定での有効化と、plugin hook の trust
 
 | プラットフォーム | イベント | hook 定義 |
 |---|---|---|
-| Claude Code | `SessionEnd` / `Stop` | `hooks/hooks.json` |
-| VS Code | `Stop` | `hooks/hooks.json`（Claude 形式を自動検出） |
-| Codex CLI | `Stop` | `hooks/hooks.json`（要 trust 承認） |
-| Copilot CLI | `agentStop` | ルート `hooks.json`（Copilot 形式） |
-| Cursor | `stop` | `hooks/configs/cursor-hooks.json`（手動登録） |
+| Claude Code | `SessionStart` / `SessionEnd` / `Stop` | `hooks/hooks.json` |
+| VS Code | `SessionStart` / `Stop` | `hooks/hooks.json`（Claude 形式を自動検出） |
+| Codex CLI | `SessionStart` / `Stop` | `hooks/hooks.json`（要 trust 承認） |
+| Copilot CLI | `agentStop` | ルート `hooks.json`（Copilot 形式。SessionStart 相当は今後対応） |
+| Cursor | `stop` | `hooks/configs/cursor-hooks.json`（手動登録。SessionStart 相当は今後対応） |
 
 なおこのリポジトリ自体を dogfooding する場合は、`claude --plugin-dir .` でこのディレクトリをプラグインとしてそのセッション限定で読み込む。
 
@@ -73,9 +73,12 @@ hooks は experimental のため設定での有効化と、plugin hook の trust
 ## 使い方
 
 - 蓄積は自動（10 ターン以上のセッション終了時に分析が走る）
-- `/learning:recall` — Instinct の一覧と昇格資格の確認
+- 昇格資格のある Instinct が1件以上あれば、セッション開始時に自動で件数が案内される（Claude Code / VS Code / Codex CLI。ゼロ件なら無出力、LLM は使わない）
+- `/learning:recall` — Instinct の一覧と昇格資格・あと一歩（confidence 0.5〜0.69）の確認
 - `/learning:acquire` — 昇格提案を 1 件ずつ承認 / 却下 / 保留
 - `/learning:setup` — 分析エンジンの設定・再設定（初回は recall / acquire から自動で委譲される）
+- `/learning:export` — 検証が進んだ Instinct をファイルにまとめて書き出す（他プロジェクト・チームへの共有用）
+- `/learning:import` — 他プロジェクトで書き出された Instinct バンドルを取り込む（confidence は 0.3 にリセットされ、再観測を経てから昇格対象になる）
 
 ## エンジン設定
 

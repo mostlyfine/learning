@@ -39,22 +39,16 @@ main() {
   [ "${turns:-0}" -gt 0 ] || turns=$(wc -l <"$transcript_path" | tr -d ' ')
   [ "${turns:-0}" -ge "$MIN_TURNS" ] || return 0
 
-  # git worktree からのセッションはメイン作業ツリーに集約する（worktree ごとに
-  # .learning が分散すると confidence が育たず、worktree 削除で学習データが消える）
-  local common_dir project_root
-  project_root="$cwd"
-  common_dir=$(git -C "$cwd" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
-  if [ -n "$common_dir" ] && [ -d "$(dirname "$common_dir")" ]; then
-    project_root=$(dirname "$common_dir")
-  fi
-
   # ランタイムデータは .claude 外に置く（headless の claude は .claude 配下に書き込めない）
-  local script_dir data_dir lock_file state_file now
+  local script_dir project_root data_dir lock_file state_file now
   script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
   source "$script_dir/lib.sh" 2>/dev/null || {
     echo "learning-skills: $script_dir/lib.sh not found; observation disabled" >&2
     return 0
   }
+  # git worktree からのセッションはメイン作業ツリーに集約する（worktree ごとに
+  # .learning が分散すると confidence が育たず、worktree 削除で学習データが消える）
+  project_root=$(resolve_project_root "$cwd")
   data_dir="$project_root/.learning"
   lock_file="$data_dir/.lock"
   state_file="$data_dir/analyzed.tsv"

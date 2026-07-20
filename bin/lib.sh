@@ -9,6 +9,18 @@ resolve_plugin_root() {
   (cd "$1/.." && pwd)
 }
 
+# git worktree からのセッションはメイン作業ツリーに集約する（worktree ごとに
+# .learning が分散すると confidence が育たず、worktree 削除で学習データが消える）
+resolve_project_root() {
+  local cwd="$1" common_dir
+  common_dir=$(git -C "$cwd" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
+  if [ -n "$common_dir" ] && [ -d "$(dirname "$common_dir")" ]; then
+    dirname "$common_dir"
+  else
+    printf '%s\n' "$cwd"
+  fi
+}
+
 # key=value 形式の設定ファイルから値を読む（ファイル欠落・行なしは空）。
 # 同一 key が複数あれば最後の値を採る
 read_config_value() {
