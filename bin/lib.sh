@@ -35,6 +35,14 @@ is_valid_engine() {
   esac
 }
 
+# 必須外部コマンドの有無を確認する。無ければ stderr に警告を出す
+# （呼び出し元が stdout/stderr をログファイルへリダイレクトしていれば自動的に記録される）
+check_required_command() {
+  command -v "$1" >/dev/null 2>&1 && return 0
+  echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] required command not found: $1" >&2
+  return 1
+}
+
 # エンジン設定不備の案内行（タイムスタンプ付き）を stdout に出す。
 # $1 が空なら未設定、非空なら不正値として扱う
 log_engine_guidance() {

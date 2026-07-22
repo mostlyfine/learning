@@ -137,6 +137,15 @@ EOF
   [ "$status" -eq 0 ]
 }
 
+@test "jq が無ければ exit 0 で stderr に警告を出す" {
+  make_instinct ready-one active 0.8
+  run env PATH=/usr/bin:/bin bash -c 'printf "%s" "$1" | "$2"' \
+    _ "$(hook_input "$PROJECT")" "$BIN/session-start.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"required command not found: jq"* ]]
+  [[ "$output" != *"<learning-preflight>"* ]]
+}
+
 @test "git worktree: メイン作業ツリーの instincts を見る" {
   make_instinct ready-one active 0.9
   git -C "$PROJECT" init -q

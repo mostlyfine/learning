@@ -41,3 +41,17 @@ teardown() { rm -rf "$TMP"; }
   [[ "$output" == *"claude, codex, copilot"* ]]
   [[ "$output" == *"/learning:setup"* ]]
 }
+
+@test "check_required_command は存在するコマンドなら0を返し何も出力しない" {
+  source "$BATS_TEST_DIRNAME/../bin/lib.sh"
+  run check_required_command bash
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "check_required_command は存在しないコマンドなら1を返し stderr に警告を出す" {
+  source "$BATS_TEST_DIRNAME/../bin/lib.sh"
+  run check_required_command no-such-command-xyz
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"required command not found: no-such-command-xyz"* ]]
+}

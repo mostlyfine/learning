@@ -29,6 +29,7 @@ if ! is_valid_engine "$engine"; then
   log_engine_guidance "$engine"
   exit 0
 fi
+check_required_command "$engine" || exit 0
 
 instincts_dir="$data_dir/instincts"
 mkdir -p "$instincts_dir"

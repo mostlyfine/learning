@@ -196,3 +196,12 @@ arg_in_engine() {
   prompt="$(arg_after -p)"
   [[ "$prompt" == *"S=unknown"* ]]
 }
+
+@test "engine のコマンドが無ければ起動せずロックを削除しエラーをログに出す" {
+  printf 'engine=codex\n' >"$DATA/config"
+  run env PATH=/usr/bin:/bin "$BIN/observe.sh" "$TMP/transcript.jsonl" "$TMP/project"
+  [ "$status" -eq 0 ]
+  [ ! -f "$TMP/engine-args.txt" ]
+  [ ! -f "$DATA/.lock" ]
+  [[ "$output" == *"required command not found: codex"* ]]
+}
