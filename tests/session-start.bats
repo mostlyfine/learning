@@ -9,8 +9,8 @@ setup() {
   INSTINCTS="$DATA/instincts"
   mkdir -p "$PROJECT/.claude" "$INSTINCTS"
   printf 'engine=claude\n' >"$DATA/config"
-  cp "$BATS_TEST_DIRNAME/../bin/preflight.sh" "$BIN/preflight.sh"
-  chmod +x "$BIN/preflight.sh"
+  cp "$BATS_TEST_DIRNAME/../bin/session-start.sh" "$BIN/session-start.sh"
+  chmod +x "$BIN/session-start.sh"
 }
 
 teardown() { rm -rf "$TMP"; }
@@ -45,7 +45,7 @@ hook_input() {
 }
 
 run_hook() {
-  run bash -c 'printf "%s" "$1" | "$2"' _ "$1" "$BIN/preflight.sh"
+  run bash -c 'printf "%s" "$1" | "$2"' _ "$1" "$BIN/session-start.sh"
 }
 
 @test "昇格資格1件: 案内が出る" {
@@ -120,13 +120,13 @@ EOF
 }
 
 @test "cwd が無ければ exit 0 で何もしない" {
-  run bash -c 'echo "{}" | "$1"' _ "$BIN/preflight.sh"
+  run bash -c 'echo "{}" | "$1"' _ "$BIN/session-start.sh"
   [ "$status" -eq 0 ]
   [ -z "$output" ]
 }
 
 @test "stdin が不正な JSON でも exit 0" {
-  run bash -c 'echo "not json" | "$1"' _ "$BIN/preflight.sh"
+  run bash -c 'echo "not json" | "$1"' _ "$BIN/session-start.sh"
   [ "$status" -eq 0 ]
 }
 
