@@ -292,3 +292,12 @@ STUB
   [ ! -f "$PLUGIN/observe-invoked.txt" ]
   [[ "$output" == *"observation disabled"* ]]
 }
+
+@test "jq が無ければ exit 0 で stderr に警告を出し起動しない" {
+  t=$(make_transcript 12)
+  run env PATH=/usr/bin:/bin bash -c 'printf "%s" "$1" | "$2"' \
+    _ "$(hook_input "$t" "$PROJECT")" "$BIN/session-end.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"required command not found: jq"* ]]
+  [ ! -f "$PLUGIN/observe-invoked.txt" ]
+}

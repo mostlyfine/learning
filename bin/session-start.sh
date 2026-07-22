@@ -14,14 +14,16 @@ frontmatter_value() {
 }
 
 main() {
-  local input cwd
+  local script_dir input cwd
+  script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+  source "$script_dir/lib.sh" 2>/dev/null || return 0
+  check_required_command jq || return 0
+
   input=$(cat) || return 0
   cwd=$(jq -r '.cwd // empty' <<<"$input" 2>/dev/null) || return 0
   { [ -n "$cwd" ] && [ -d "$cwd" ]; } || return 0
 
-  local script_dir project_root data_dir instincts_dir
-  script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-  source "$script_dir/lib.sh" 2>/dev/null || return 0
+  local project_root data_dir instincts_dir
   project_root=$(resolve_project_root "$cwd")
   data_dir="$project_root/.learning"
   instincts_dir="$data_dir/instincts"

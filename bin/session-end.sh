@@ -11,7 +11,14 @@ main() {
   # 再帰防止: observer 自身のセッションでは何もしない
   [ "${LEARNING_SKILLS_OBSERVER:-}" = "1" ] && return 0
 
-  local input transcript_path cwd session_id
+  local script_dir input transcript_path cwd session_id
+  script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+  source "$script_dir/lib.sh" 2>/dev/null || {
+    echo "learning-skills: $script_dir/lib.sh not found; observation disabled" >&2
+    return 0
+  }
+  check_required_command jq || return 0
+
   input=$(cat) || return 0
   # 入力フィールドの正規化: Claude/VS Code/Codex は snake_case、Copilot は camelCase、
   # Cursor は cwd の代わりに workspace_roots を渡す
@@ -40,12 +47,7 @@ main() {
   [ "${turns:-0}" -ge "$MIN_TURNS" ] || return 0
 
   # ランタイムデータは .claude 外に置く（headless の claude は .claude 配下に書き込めない）
-  local script_dir project_root data_dir lock_file state_file now
-  script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-  source "$script_dir/lib.sh" 2>/dev/null || {
-    echo "learning-skills: $script_dir/lib.sh not found; observation disabled" >&2
-    return 0
-  }
+  local project_root data_dir lock_file state_file now
   # git worktree からのセッションはメイン作業ツリーに集約する（worktree ごとに
   # .learning が分散すると confidence が育たず、worktree 削除で学習データが消える）
   project_root=$(resolve_project_root "$cwd")
