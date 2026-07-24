@@ -1,10 +1,10 @@
 ---
-name: recall
-description: learning プラグインがこれまでに何を学習したかを確認するとき必ず使う（読み取り専用）。蓄積された Instinct（学習で得た知見）の一覧表示と、昇格資格のある Instinct の確認を行う。「learning recall」「learning の状態」「学習状況を見せて」のような直接の呼びかけに加え、蓄積された instinct・知見・学習内容を見たい、学習が進んでいるか知りたい、昇格できそうなものを確認したい、といった learning プラグインの現状把握を求めるあらゆる質問で実行する。エンジン設定が未作成なら初回セットアップ（/learning:setup）へ委譲する。
+name: status
+description: learning プラグインがこれまでに何を学習したかを確認するとき必ず使う（読み取り専用）。蓄積された Instinct（学習で得た知見）の一覧表示と、昇格資格のある Instinct の確認を行う。「learning status」「learning の状態」「学習状況を見せて」のような直接の呼びかけに加え、蓄積された instinct・知見・学習内容を見たい、学習が進んでいるか知りたい、昇格できそうなものを確認したい、といった learning プラグインの現状把握を求めるあらゆる質問で実行する。エンジン設定が未作成なら初回セットアップ（/learning:setup）へ委譲する。
 allowed-tools: Read, Glob, Grep, Bash(git rev-parse:*), SlashCommand(/learning:setup), Skill(learning:setup)
 ---
 
-# /learning:recall — Instinct の一覧表示
+# /learning:status — Instinct の一覧表示
 
 蓄積された Instinct（`.learning/instincts/*.md`）の frontmatter を集めて一覧表示する。ファイル編集は一切しない（エンジン設定が無い場合のセットアップは `/learning:setup` に委譲する）。
 
