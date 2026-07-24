@@ -1,6 +1,6 @@
 ---
 name: setup
-description: 学習プラグインが観察に使う分析エンジン（claude / codex / copilot）の初回セットアップと再設定を行う。「learning のセットアップ」「観察エンジンを変更したい」、observer ログに unknown engine が出たときの修復、および recall / acquire からの委譲で実行する。
+description: 学習プラグインが観察に使う分析エンジン（claude / codex / copilot）の初回セットアップと再設定を行う。「learning のセットアップ」「観察エンジンを変更したい」、observer ログに unknown engine が出たときの修復、および status / acquire からの委譲で実行する。
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Write(.learning/config), Write(.learning/.gitignore), Edit(.learning/config)
 ---
 
@@ -16,7 +16,7 @@ allowed-tools: Read, Glob, Grep, AskUserQuestion, Write(.learning/config), Write
    - copilot → `engine=copilot` と `model=claude-haiku-4.5`
    - codex → `engine=codex` のみ（モデルは CLI 既定に任せる）
 3. `.learning/.gitignore` が無ければ内容 `*` で作成する（config を含む `.learning` 全体をリポジトリの追跡対象から外す）
-4. 「保存しました。以降のセッション終了時から観察が有効になります」と伝える。recall / acquire から委譲された場合は元の処理を続行する
+4. 「保存しました。以降のセッション終了時から観察が有効になります」と伝える。status / acquire から委譲された場合は元の処理を続行する
 
 ## 備考
 
