@@ -1,6 +1,6 @@
 ---
 name: acquire
-description: 蓄積された Instinct を1件ずつ承認 / 却下 / 保留し、CLAUDE.md や skill・agent へ反映する昇格レビューを行う。「instinct を昇格して」「Instinct をレビュー」「学習内容を昇格して」だけでなく、「instinct の棚卸しをしたい」「溜まった instinct を整理して」「昇格提案を見せて」のように、蓄積した Instinct を承認・却下しながら整理したいという意図があれば実行する（GitHub の PR レビューやコードレビュー、人事・研修のレビューには使わない）。
+description: 蓄積 Instinct の昇格レビュー（承認/却下/保留）。「instinct を昇格して」で起動。
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git rev-parse:*), SlashCommand(/learning:setup), Skill(learning:setup), Edit(.learning/instincts/**), Edit(.claude/rules/**), Edit(.claude/skills/**), Edit(.claude/agents/**), Edit(CLAUDE.md), Write(.claude/rules/**), Write(.claude/skills/**), Write(.claude/agents/**)
 ---
 
