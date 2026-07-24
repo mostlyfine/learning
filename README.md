@@ -77,8 +77,6 @@ hooks は experimental のため設定での有効化と、plugin hook の trust
 - `/learning:recall` — Instinct の一覧と昇格資格・あと一歩（confidence 0.5〜0.69）の確認
 - `/learning:acquire` — 昇格提案を 1 件ずつ承認 / 却下 / 保留
 - `/learning:setup` — 分析エンジンの設定・再設定（初回は recall / acquire から自動で委譲される）
-- `/learning:export` — 検証が進んだ Instinct をファイルにまとめて書き出す（他プロジェクト・チームへの共有用）
-- `/learning:import` — 他プロジェクトで書き出された Instinct バンドルを取り込む（confidence は 0.3 にリセットされ、再観測を経てから昇格対象になる）
 
 ## エンジン設定
 
