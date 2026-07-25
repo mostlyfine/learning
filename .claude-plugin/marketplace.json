@@ -1,12 +1,12 @@
 {
   "name": "learning-skills",
-  "description": "Claude Code セッションの自動観察で知識を蓄積・昇格させる learning プラグインの配布元",
+  "description": "Distribution source for the learning plugin, which accumulates and promotes knowledge from automatic observation of Claude Code sessions",
   "owner": { "name": "mostlyfine" },
   "plugins": [
     {
       "name": "learning",
       "source": "./",
-      "description": "セッション自動観察による Instinct の蓄積と承認制昇格"
+      "description": "Accumulates Instincts via automatic session observation and promotes them with user approval"
     }
   ]
 }

@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# SessionEnd/Stop hook: セッション transcript の学習分析（observer）を起動する。
-# Claude Code / VS Code / Codex / Copilot / Cursor の hook 入力方言を正規化して受ける。
-# 学習系の失敗はセッション終了を妨げてはならないため、常に exit 0 する。
+# SessionEnd/Stop hook: launches the learning analysis (observer) on the session transcript.
+# Normalizes hook input dialects across Claude Code / VS Code / Codex / Copilot / Cursor.
+# Learning-related failures must never block session end, so this always exits 0.
 set -u
 
 MIN_TURNS="${LEARNING_SKILLS_MIN_TURNS:-10}"
 LOCK_STALE_SECONDS=1800
 
 main() {
-  # 再帰防止: observer 自身のセッションでは何もしない
+  # Recursion guard: do nothing in the observer's own session
   [ "${LEARNING_SKILLS_OBSERVER:-}" = "1" ] && return 0
 
   local script_dir input transcript_path cwd session_id
@@ -20,15 +20,15 @@ main() {
   check_required_command jq || return 0
 
   input=$(cat) || return 0
-  # 入力フィールドの正規化: Claude/VS Code/Codex は snake_case、Copilot は camelCase、
-  # Cursor は cwd の代わりに workspace_roots を渡す
+  # Normalize input fields: Claude/VS Code/Codex use snake_case, Copilot uses camelCase,
+  # and Cursor passes workspace_roots instead of cwd
   transcript_path=$(jq -r '.transcript_path // .transcriptPath // empty' <<<"$input" 2>/dev/null) || return 0
   cwd=$(jq -r '.cwd // (.workspace_roots // [])[0] // empty' <<<"$input" 2>/dev/null) || return 0
   session_id=$(jq -r '.session_id // .sessionId // .conversation_id // "unknown"' <<<"$input" 2>/dev/null) || return 0
   { [ -n "$transcript_path" ] && [ -f "$transcript_path" ]; } || return 0
   { [ -n "$cwd" ] && [ -d "$cwd" ]; } || return 0
 
-  # プロジェクト外のセッションは学習対象外
+  # Sessions outside a project are not eligible for learning
   local marker in_project=0
   for marker in .claude CLAUDE.md AGENTS.md .cursor .codex .github; do
     if [ -e "$cwd/$marker" ]; then
@@ -38,27 +38,31 @@ main() {
   done
   [ "$in_project" = "1" ] || return 0
 
-  # 短小セッションには学習素材がない。Claude 形式で数えられない transcript は
-  # 総行数で近似する（各エージェントの transcript 形式は安定 API ではない）
+  # Short sessions have no learning material. For transcripts that can't be counted
+  # in Claude's format, approximate with total line count (each agent's transcript
+  # format is not a stable API)
   local turns
   turns=$(jq -r 'select(.type == "user" or .type == "assistant") | .type' \
     "$transcript_path" 2>/dev/null | wc -l | tr -d ' ')
   [ "${turns:-0}" -gt 0 ] || turns=$(wc -l <"$transcript_path" | tr -d ' ')
   [ "${turns:-0}" -ge "$MIN_TURNS" ] || return 0
 
-  # ランタイムデータは .claude 外に置く（headless の claude は .claude 配下に書き込めない）
+  # Runtime data lives outside .claude (headless claude can't write under .claude)
   local project_root data_dir lock_file state_file now
-  # git worktree からのセッションはメイン作業ツリーに集約する（worktree ごとに
-  # .learning が分散すると confidence が育たず、worktree 削除で学習データが消える）
+  # Sessions from a git worktree are aggregated into the main worktree (if .learning
+  # were scattered per worktree, confidence would never grow, and learning data
+  # would be lost when the worktree is removed)
   project_root=$(resolve_project_root "$cwd")
   data_dir="$project_root/.learning"
   lock_file="$data_dir/.lock"
   state_file="$data_dir/analyzed.tsv"
   now=$(date +%s)
 
-  # エンジン未設定なら何もしない。config はあるがエンジンが空・不正なら、案内だけ
-  # observer.log に残して何もしない（いずれも analyzed.tsv に記録して学習機会を
-  # 失うのを防ぐため増分ガードより前で判定する）。設定は /learning:setup で作られる
+  # Do nothing if the engine is unconfigured. If config exists but the engine is
+  # empty or invalid, leave guidance in observer.log and do nothing (both are
+  # decided before the incremental guard, so a missed engine setup doesn't get
+  # recorded in analyzed.tsv and lose a learning opportunity). Config is created
+  # by /learning:setup
   local config_file engine
   config_file="$data_dir/config"
   [ -f "$config_file" ] || return 0
@@ -69,15 +73,16 @@ main() {
     return 0
   fi
 
-  # 増分ガード: ターン単位で発火するイベント（Stop/agentStop/stop）による
-  # 同一 transcript の再分析は、前回分析から MIN_TURNS 以上増えたときだけ許す
+  # Incremental guard: re-analysis of the same transcript by per-turn events
+  # (Stop/agentStop/stop) is only allowed once turns have grown by MIN_TURNS
+  # or more since the last analysis
   local last
   last=$(awk -F'\t' -v p="$transcript_path" '$1 == p { v = $2 } END { print v }' \
     "$state_file" 2>/dev/null)
   [[ "${last:-}" =~ ^[0-9]+$ ]] || last=0
   [ $((turns - last)) -ge "$MIN_TURNS" ] || return 0
 
-  # 多重起動防止。observer 異常終了で学習が止まらないよう stale ロックは奪取する
+  # Prevent concurrent runs. A stale lock is seized so an observer crash doesn't halt learning
   if [ -f "$lock_file" ]; then
     local ts age
     ts=$(cat "$lock_file" 2>/dev/null)
@@ -88,7 +93,7 @@ main() {
   mkdir -p "$data_dir/logs"
   echo "$now" >"$lock_file"
 
-  # 分析済みターン数をロック保持中に記録し、observer 完了前の再発火を抑止する
+  # Record the analyzed turn count while holding the lock, to suppress re-firing before the observer finishes
   if [ -f "$state_file" ]; then
     awk -F'\t' -v p="$transcript_path" '$1 != p' "$state_file" >"$state_file.tmp"
   else

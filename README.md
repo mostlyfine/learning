@@ -1,25 +1,24 @@
 # learning-skills
 
-AI コーディングエージェントのセッションを自動観察し、行動パターンを Instinct として蓄積、承認制で CLAUDE.md / skill / agent に昇格させる自己完結型プラグイン。Claude Code のほか VS Code / Codex CLI / GitHub Copilot CLI / Cursor でも動作する。
+A self-contained plugin that automatically observes AI coding agent sessions, accumulates behavioral patterns as Instincts, and promotes them into CLAUDE.md / skill / agent with user approval. Works with Claude Code as well as VS Code / Codex CLI / GitHub Copilot CLI / Cursor.
 
-## 仕組み
+## How it works
 
 ```
-セッション末 hook → ガード判定 → 設定した分析エンジン（claude / codex / copilot）で transcript を分析
-  → .learning/instincts/*.md に蓄積（confidence 0.3 から開始）
-  → 別セッションで再観察されるたび +0.2
-  → 0.7 以上で /learning:acquire の昇格提案対象に
+end-of-session hook → guard checks → transcript analyzed by the configured engine (claude / codex / copilot)
+  → accumulated in .learning/instincts/*.md (starts at confidence 0.3)
+  → +0.2 each time it's re-observed in a different session
+  → at 0.7+, becomes eligible for a /learning:acquire promotion proposal
 ```
 
-昇格はすべてユーザー承認制。蓄積中の Instinct がセッションの挙動に影響することはない。
+All promotion requires user approval. Instincts that are still accumulating never affect session behavior.
 
-ターン単位で発火するイベント（Stop 系）に対しては2段のガードで多重学習を防ぐ:
-前回分析から `LEARNING_SKILLS_MIN_TURNS` 以上ターンが増えたときだけ再分析し（`.learning/analyzed.tsv`）、
-Instinct の強化は Evidence に記録した session id で同一セッション1回に制限する。
+For per-turn events (the Stop family), two guards prevent duplicate learning:
+re-analysis only happens once turns have grown by `LEARNING_SKILLS_MIN_TURNS` or more since the last analysis (`.learning/analyzed.tsv`), and Instinct reinforcement is limited to once per session via the session id recorded in Evidence.
 
-## インストール
+## Installation
 
-依存: bash, jq, 選択した分析エンジンの CLI（claude / codex / copilot のいずれか）
+Dependencies: bash, jq, and the CLI for whichever analysis engine you choose (claude, codex, or copilot)
 
 ### Claude Code
 
@@ -28,11 +27,11 @@ Instinct の強化は Evidence に記録した session id で同一セッショ�
 /plugin install learning@learning-skills
 ```
 
-skill（`/learning:status`, `/learning:acquire`。自然言語でも呼び出せる）と SessionEnd/Stop hook が自動で有効になる。
+The skills (`/learning:status`, `/learning:acquire` — also callable in natural language) and the SessionEnd/Stop hook are enabled automatically.
 
 ### VS Code (Copilot agent, Preview)
 
-コマンドパレットの「Chat: Install Plugin From Source」に `https://github.com/mostlyfine/learning` を指定する。`.claude-plugin/plugin.json` と `hooks/hooks.json` が自動検出され、`Stop` イベントで観察が走る。
+In the command palette, run "Chat: Install Plugin From Source" and point it at `https://github.com/mostlyfine/learning`. `.claude-plugin/plugin.json` and `hooks/hooks.json` are auto-detected, and observation runs on the `Stop` event.
 
 ### GitHub Copilot CLI
 
@@ -41,7 +40,7 @@ skill（`/learning:status`, `/learning:acquire`。自然言語でも呼び出せ
 /plugin install learning
 ```
 
-ルートの `hooks.json`（Copilot 形式）の `agentStop` イベントで観察が走る。
+Observation runs on the root `hooks.json`'s (Copilot format) `agentStop` event.
 
 ### Codex CLI
 
@@ -50,62 +49,62 @@ skill（`/learning:status`, `/learning:acquire`。自然言語でも呼び出せ
 /plugin install learning
 ```
 
-hooks は experimental のため設定での有効化と、plugin hook の trust 承認が必要。`Stop` イベントで観察が走る。
+Hooks are experimental, so you need to enable them in settings and grant trust approval for the plugin hook. Observation runs on the `Stop` event.
 
 ### Cursor (2.5+)
 
-`/plugin install` で導入する。plugin hook が登録されない場合は `hooks/configs/cursor-hooks.json` の内容を `~/.cursor/hooks.json`（または プロジェクトの `.cursor/hooks.json`）にマージし、command のパスを clone 先の実パスに書き換える。
+Install via `/plugin install`. If the plugin hook doesn't get registered, merge the contents of `hooks/configs/cursor-hooks.json` into `~/.cursor/hooks.json` (or the project's `.cursor/hooks.json`), rewriting the command paths to the actual path where you cloned the repo.
 
-### 対応イベントの対応表
+### Supported event mapping
 
-| プラットフォーム | イベント | hook 定義 |
+| Platform | Event | Hook definition |
 |---|---|---|
 | Claude Code | `SessionStart` / `SessionEnd` / `Stop` | `hooks/hooks.json` |
-| VS Code | `SessionStart` / `Stop` | `hooks/hooks.json`（Claude 形式を自動検出） |
-| Codex CLI | `SessionStart` / `Stop` | `hooks/hooks.json`（要 trust 承認） |
-| Copilot CLI | `agentStop` | ルート `hooks.json`（Copilot 形式。SessionStart 相当は今後対応） |
-| Cursor | `stop` | `hooks/configs/cursor-hooks.json`（手動登録。SessionStart 相当は今後対応） |
+| VS Code | `SessionStart` / `Stop` | `hooks/hooks.json` (auto-detects the Claude format) |
+| Codex CLI | `SessionStart` / `Stop` | `hooks/hooks.json` (requires trust approval) |
+| Copilot CLI | `agentStop` | root `hooks.json` (Copilot format; SessionStart equivalent planned) |
+| Cursor | `stop` | `hooks/configs/cursor-hooks.json` (manual registration; SessionStart equivalent planned) |
 
-なおこのリポジトリ自体を dogfooding する場合は、`claude --plugin-dir .` でこのディレクトリをプラグインとしてそのセッション限定で読み込む。
+To dogfood this repository itself, load this directory as a plugin for a single session with `claude --plugin-dir .`.
 
-ランタイムデータ（Instinct・ログ・ロック）はプロジェクト直下の `.learning/` に置かれる（初回実行時に自動作成、`.learning/.gitignore` により全体が commit 対象外）。`.claude/` 配下に置かない理由: headless の claude は `.claude/` 配下への書き込みが保護により拒否されるため。git worktree でのセッションは worktree ごとに分散させず、メイン作業ツリー直下の `.learning/` に集約される（worktree 削除で学習データが消えるのを防ぐため）。
+Runtime data (Instincts, logs, locks) lives under the project root in `.learning/` (created automatically on first run; `.learning/.gitignore` excludes all of it from commits). It's not placed under `.claude/` because headless claude is denied write access there by policy. Sessions in a git worktree aren't scattered per-worktree — they're aggregated into the main worktree's `.learning/` (so learning data isn't lost when a worktree is removed).
 
-## 使い方
+## Usage
 
-- 蓄積は自動（10 ターン以上のセッション終了時に分析が走る）
-- 昇格資格のある Instinct が1件以上あれば、セッション開始時に自動で件数が案内される（Claude Code / VS Code / Codex CLI。ゼロ件なら無出力、LLM は使わない）
-- `/learning:status` — Instinct の一覧と昇格資格・あと一歩（confidence 0.5〜0.69）の確認
-- `/learning:acquire` — 昇格提案を 1 件ずつ承認 / 却下 / 保留
-- `/learning:setup` — 分析エンジンの設定・再設定（初回は status / acquire から自動で委譲される）
+- Accumulation is automatic (analysis runs at the end of any session with 10+ turns)
+- If one or more Instincts are promotion-eligible, the count is announced automatically at session start (Claude Code / VS Code / Codex CLI; zero eligible means no output, and no LLM is used)
+- `/learning:status` — list Instincts and check promotion eligibility / how close they are (confidence 0.5-0.69)
+- `/learning:acquire` — approve / reject / hold each promotion proposal, one at a time
+- `/learning:setup` — configure or reconfigure the analysis engine (delegated to automatically from status / acquire on first use)
 
-## エンジン設定
+## Engine configuration
 
-観察に使う分析エンジンはプロジェクトごとに初回に一度だけ質問され、プロジェクト直下の `.learning/config` に保存される（2回目以降は自動適用。プラグインを更新しても消えない）。`/learning:status` か `/learning:acquire` を最初に実行したときにセットアップが走り、それまでセッション観察は動かない。
+The analysis engine used for observation is asked once per project, the first time, and saved to `.learning/config` under the project root (applied automatically after that; it survives plugin updates). Setup runs the first time `/learning:status` or `/learning:acquire` is run, and session observation doesn't work until then.
 
-| エンジン | 既定モデル | 実行形 |
+| Engine | Default model | Invocation |
 |---|---|---|
 | `claude` | `haiku` | `claude -p --allowedTools ...` |
-| `codex` | CLI 既定 | `codex exec --sandbox workspace-write` |
+| `codex` | CLI default | `codex exec --sandbox workspace-write` |
 | `copilot` | `claude-haiku-4.5` | `copilot -p --no-ask-user` |
 
-コマンドが使えない環境（Cursor の手動 hook 登録等）では、プロジェクト直下に `.learning/config` を手で作る:
+In environments where the command isn't available (e.g. Cursor's manual hook registration), create `.learning/config` by hand under the project root:
 
 ```
 engine=claude
 model=haiku
 ```
 
-`engine` に上記以外の文字列を書くと、観察は実行されず有効なエンジン一覧の案内が `.learning/logs/observer.log` に出力される（`/learning:setup` で再設定できる）。
+Any value of `engine` other than the above prevents observation from running, and guidance listing the valid engines is written to `.learning/logs/observer.log` (reconfigure with `/learning:setup`).
 
-## 設定（環境変数）
+## Configuration (environment variables)
 
-| 変数 | 既定 | 意味 |
+| Variable | Default | Meaning |
 |---|---|---|
-| `LEARNING_SKILLS_MIN_TURNS` | `10` | 分析対象とする最小ターン数。再分析に必要なターン増分の閾値を兼ねる |
+| `LEARNING_SKILLS_MIN_TURNS` | `10` | Minimum turn count for a session to be analyzed; also doubles as the turn-increment threshold required for re-analysis |
 
-## 開発
+## Development
 
 ```bash
-bats tests/                      # ユニットテスト
-tests/manual/verify-observer.sh  # observer の受け入れ検証（実 API 消費）
+bats tests/                      # unit tests
+tests/manual/verify-observer.sh  # observer acceptance check (consumes real API calls)
 ```

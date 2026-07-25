@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# observer 起動スクリプト: transcript を claude -p で分析し Instinct を蓄積する。
-# session-end.sh からバックグラウンドで起動される前提。stdout/stderr は
-# 呼び出し元によって logs/observer.log にリダイレクトされる。
+# Observer launcher: analyzes the transcript via claude -p and accumulates Instincts.
+# Assumes it is started in the background by session-end.sh; stdout/stderr are
+# redirected to logs/observer.log by the caller.
 set -u
 
 script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -15,13 +15,14 @@ transcript_path="${1:?transcript path required}"
 project_dir="${2:?project dir required}"
 session_id="${3:-unknown}"
 
-# ランタイムデータは .claude 外に置く（headless の claude は .claude 配下に書き込めない）
+# Runtime data lives outside .claude (headless claude can't write under .claude)
 data_dir="$project_dir/.learning"
 lock_file="$data_dir/.lock"
 trap 'rm -f "$lock_file"' EXIT
 
-# エンジンとモデルはプロジェクトの .learning/config（/learning:setup で作成される）から読む。
-# 誤設定時にディレクトリ作成やプロンプト処理の副作用を残さないよう最初に検証する
+# Engine and model are read from the project's .learning/config (created by /learning:setup).
+# Validate first so a misconfiguration leaves no side effects from directory creation
+# or prompt processing
 config_file="$data_dir/config"
 engine=$(read_config_value "$config_file" engine)
 model=$(read_config_value "$config_file" model)
@@ -48,13 +49,13 @@ prompt="${prompt//\{\{TODAY\}\}/$(date +%F)}"
 prompt="${prompt//\{\{SESSION_ID\}\}/$session_id}"
 
 cd "$project_dir" || exit 0
-# ${model:+...} は意図的に unquoted（空なら引数ごと消える）。
-# エンジン別の既定モデルは skills/setup/SKILL.md の手順と README のエンジン表にも
-# 記載がある（変更時は3箇所を同期する）
+# ${model:+...} is intentionally left unquoted (the whole argument disappears when empty).
+# The per-engine default models are also documented in skills/setup/SKILL.md's
+# procedure and the README's engine table (keep all three in sync when changing)
 case "$engine" in
   claude)
-    # Write(path) ルールはファイル許可チェックにマッチしない（Edit(path) ルールが
-    # Write を含む全ファイル編集ツールを許可する）ため Edit のみ指定する
+    # A Write(path) rule doesn't match the file-permission check (an Edit(path) rule
+    # covers all file-editing tools including Write), so only Edit is specified here
     LEARNING_SKILLS_OBSERVER=1 claude -p "$prompt" --model "${model:-haiku}" \
       --allowedTools "Read,Glob,Grep,Edit(.learning/instincts/**)"
     ;;
@@ -67,7 +68,8 @@ case "$engine" in
       --allow-tool 'write(.learning/instincts/**)' --no-ask-user -s
     ;;
   *)
-    # is_valid_engine 通過後は到達しない安全弁（VALID_ENGINES と case 腕の乖離検出用）
+    # Unreachable after is_valid_engine passes; a safety net to catch drift
+    # between VALID_ENGINES and the case arms
     log_engine_guidance "$engine"
     exit 0
     ;;

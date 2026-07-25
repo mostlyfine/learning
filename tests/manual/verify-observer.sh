@@ -1,30 +1,30 @@
 #!/usr/bin/env bash
-# observer プロンプトの受け入れ検証（実 API を消費する。手動実行専用）。
-# 一時プロジェクトを作り、フィクスチャ transcript を実際に分析させて
-# 期待する Instinct が生成されるかを確認する。
+# Observer prompt acceptance check (consumes real API calls; manual run only).
+# Creates a temporary project, has it actually analyze fixture transcripts, and
+# checks whether the expected Instincts are generated.
 set -euo pipefail
 
 repo_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
-# macOS の mktemp は /var/folders（/private/var へのシンボリックリンク）を返し、
-# cwd 相対の許可ルールが絶対パスの書き込みにマッチしなくなるため物理パスに正規化する
+# macOS's mktemp returns /var/folders (a symlink to /private/var), and cwd-relative
+# permission rules stop matching absolute-path writes, so normalize to the physical path
 work=$(cd "$(mktemp -d)" && pwd -P)
-trap 'echo "作業ディレクトリ: ${work}（確認後に手動で削除してください）"' EXIT
+trap 'echo "Work directory: ${work} (delete it manually after checking)"' EXIT
 
 project="$work/project"
 mkdir -p "$project/.claude" "$project/.learning"
-# プラグインは対象プロジェクトの外（プラグインキャッシュ相当）に置かれる。
-# 実レイアウトどおり <plugin_root>/bin と <plugin_root>/hooks を再現する
+# The plugin lives outside the target project (equivalent to a plugin cache).
+# Reproduce the real layout of <plugin_root>/bin and <plugin_root>/hooks
 cp -R "$repo_root/bin" "$work/bin"
 cp -R "$repo_root/hooks" "$work/hooks"
-# エンジン設定はプロジェクト側の .learning/config
+# Engine configuration lives in the project's .learning/config
 printf 'engine=claude\nmodel=haiku\n' >"$project/.learning/config"
 
-echo "=== observer を実行中（engine=claude, model=haiku）==="
+echo "=== Running observer (engine=claude, model=haiku) ==="
 date +%s >"$project/.learning/.lock"
 "$work/bin/observe.sh" \
   "$repo_root/tests/fixtures/sample-transcript.jsonl" "$project" "verify-sess-1"
 
-echo "=== 生成された Instinct ==="
+echo "=== Generated Instincts ==="
 ls -la "$project/.learning/instincts/" || true
 shopt -s nullglob
 for f in "$project/.learning/instincts/"*.md; do
@@ -32,22 +32,22 @@ for f in "$project/.learning/instincts/"*.md; do
   cat "$f"
 done
 
-echo "=== 別セッション相当の transcript で再実行（強化の検証） ==="
+echo "=== Re-running with a transcript from a different session (verifying reinforcement) ==="
 date +%s >"$project/.learning/.lock"
-# 強化（confidence 加算）は別セッションでの再観察が条件のため、session id を変えて渡す
+# Reinforcement (confidence increment) requires re-observation in a different session, so pass a different session id
 "$work/bin/observe.sh" \
   "$repo_root/tests/fixtures/sample-transcript-2.jsonl" "$project" "verify-sess-2"
 
-echo "=== 強化後の frontmatter ==="
+echo "=== Frontmatter after reinforcement ==="
 grep -H -E '^(confidence|evidence_count):' "$project/.learning/instincts/"*.md || true
 
 cat <<'CHECKLIST'
 
-=== 受け入れチェックリスト（目視確認） ===
-[ ] correction 型の Instinct が生成されている（pip ではなく uv を使う）
-[ ] error-solution 型の Instinct が生成されている（uv add 後に uv sync）
-[ ] 各ファイルの frontmatter に id/type/status/confidence/evidence_count/promote_to/created/updated が揃っている
-[ ] 1回目の実行後、confidence が 0.3、status が active である
-[ ] 2回目（別セッション相当）の実行後、confidence 0.5・evidence_count 2 に強化され、ファイル数は増えていない
-[ ] 無関係・自明な Instinct が生成されていない
+=== Acceptance checklist (visual check) ===
+[ ] A correction-type Instinct was generated (use uv instead of pip)
+[ ] An error-solution-type Instinct was generated (uv sync after uv add)
+[ ] Each file's frontmatter has id/type/status/confidence/evidence_count/promote_to/created/updated
+[ ] After the 1st run, confidence is 0.3 and status is active
+[ ] After the 2nd run (a different session), confidence is reinforced to 0.5, evidence_count to 2, and the file count hasn't grown
+[ ] No irrelevant or trivial Instincts were generated
 CHECKLIST

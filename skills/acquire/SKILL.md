@@ -1,41 +1,41 @@
 ---
 name: acquire
-description: 蓄積 Instinct の昇格レビュー（承認/却下/保留）。「instinct を昇格して」で起動。
+description: Promotion review of accumulated Instincts (approve/reject/hold). Triggered by "promote the instincts."
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git rev-parse:*), SlashCommand(/learning:setup), Skill(learning:setup), Edit(.learning/instincts/**), Edit(.claude/rules/**), Edit(.claude/skills/**), Edit(.claude/agents/**), Edit(CLAUDE.md), Write(.claude/rules/**), Write(.claude/skills/**), Write(.claude/agents/**)
 ---
 
-# /learning:acquire — Instinct の昇格提案
+# /learning:acquire — Instinct promotion proposals
 
-蓄積された Instinct（`.learning/instincts/*.md`）のうち信頼度が閾値に達したものを、ユーザー承認のもとで昇格させる。
+Promotes accumulated Instincts (`.learning/instincts/*.md`) that have reached the confidence threshold, with user approval.
 
-## 初回セットアップへの委譲（エンジン設定が無い場合のみ）
+## Delegating to first-time setup (only when the engine isn't configured)
 
-プロジェクトルート（Instinct の置き場所と同じ。worktree 内では「前提」のとおりメイン作業ツリー）に `.learning/config` が存在しなければ、`/learning:setup` を実行（SlashCommand ツール。解決できない場合は Skill ツールで `learning:setup` を起動する）してから本来の処理を続行する。
+If `.learning/config` doesn't exist at the project root (the same location as the Instincts; inside a worktree this is the main worktree, per "Assumptions" below), run `/learning:setup` (via the SlashCommand tool; if that can't be resolved, launch `learning:setup` via the Skill tool) and then continue with the normal processing.
 
-## 前提
+## Assumptions
 
-- Instinct の置き場所: プロジェクト直下の `.learning/instincts/`。ただし git worktree 内のセッションではメイン作業ツリーに集約されるため、`git rev-parse --path-format=absolute --git-common-dir` が返すパスの親ディレクトリをプロジェクトルートとして扱う（メインツリー側の編集には確認プロンプトが出るが正常な動作）
-- Instinct ファイルの frontmatter: `id`, `type`(correction|error-solution|workflow), `status`(active|promoted|rejected), `confidence`, `evidence_count`, `promote_to`(rules|instructions|skill|agent), `created`, `updated`
-- 昇格資格: `status: active` かつ `confidence >= 0.7`
-- instincts ディレクトリが存在しない・空の場合は「まだ Instinct が蓄積されていません。セッションを重ねると自動的に蓄積されます」と report して終了する
+- Instinct location: `.learning/instincts/` under the project root. In a git worktree session, however, data is aggregated into the main worktree, so the project root is the parent directory of the path returned by `git rev-parse --path-format=absolute --git-common-dir` (editing files on the main-tree side may trigger a confirmation prompt — that's expected)
+- Instinct file frontmatter: `id`, `type`(correction|error-solution|workflow), `status`(active|promoted|rejected), `confidence`, `evidence_count`, `promote_to`(rules|instructions|skill|agent), `created`, `updated`
+- Promotion eligibility: `status: active` and `confidence >= 0.7`
+- If the instincts directory doesn't exist or is empty, report "No Instincts have been accumulated yet. They'll build up automatically over more sessions" and stop
 
-## 手順
+## Procedure
 
-1. 昇格資格（前提を参照）を満たす Instinct を収集する。0 件なら「昇格資格のある Instinct はありません」と現在の最高 confidence を添えて終了する
-2. 各 Instinct について昇格先を決定する。frontmatter の `promote_to` を初期値とし、内容から見て不適切なら変更する:
-   - `instructions` → プロジェクトの `CLAUDE.md` に規則として追記（該当セクションがなければ末尾に追加）
-   - `rules` → `.claude/rules/<id>.md` としてパスごとのルール定義を新規作成
-   - `skill` → 既存 skill の手順改善、または `.claude/skills/<id>/SKILL.md` の新規作成
-   - `agent` → `.claude/agents/<id>.md` としてサブエージェント定義を新規作成
-3. 昇格先ファイルの現状を読み、具体的な変更案（diff 形式または新規ファイル全文）を作る
-4. **1件ずつ**ユーザーに提示し、承認 / 却下 / 保留 を確認する（AskUserQuestion ツールが利用可能ならそれを使い、なければ対話で尋ねる）。質問文には Instinct の Trigger/Action、evidence_count、変更案の要約を含める
-   - **承認** → 変更を適用し、Instinct の frontmatter を `status: promoted` に更新、`promoted_to: <適用先パス>` を追記する
-   - **却下** → `status: rejected` に更新する（observer が同種を再作成しなくなる）
-   - **保留** → 何も変更しない（次回の /learning:acquire 実行に持ち越し）
-5. 全件処理後、適用結果のサマリ（承認/却下/保留の件数と適用先パス）を表示する
+1. Collect Instincts meeting the promotion eligibility bar (see Assumptions). If there are none, report "No promotion-eligible Instincts" along with the current highest confidence, and stop
+2. For each Instinct, decide the promotion destination. Start from the frontmatter's `promote_to` and change it if the content doesn't fit:
+   - `instructions` → append as a rule to the project's `CLAUDE.md` (add a new section at the end if none fits)
+   - `rules` → create a new path-scoped rule definition at `.claude/rules/<id>.md`
+   - `skill` → improve an existing skill's procedure, or create a new `.claude/skills/<id>/SKILL.md`
+   - `agent` → create a new subagent definition at `.claude/agents/<id>.md`
+3. Read the current state of the destination file and draft a concrete change proposal (a diff, or the full text of a new file)
+4. Present each Instinct to the user **one at a time** and confirm approve / reject / hold (use the AskUserQuestion tool if available, otherwise ask conversationally). Include the Instinct's Trigger/Action, evidence_count, and a summary of the proposed change in the question
+   - **Approve** → apply the change, update the Instinct's frontmatter to `status: promoted`, and append `promoted_to: <destination path>`
+   - **Reject** → update to `status: rejected` (the observer will no longer recreate the same kind of Instinct)
+   - **Hold** → change nothing (carries over to the next `/learning:acquire` run)
+5. After processing all of them, show a summary of the outcome (counts of approved/rejected/held, and the destination paths)
 
-## 制約
+## Constraints
 
-- ユーザーの承認なしに昇格先ファイルを変更しない
-- 一度の承認で複数の Instinct をまとめて適用しない（1件ずつ確認する）
-- instincts ファイルの confidence や evidence を手動で書き換えない（それは observer の仕事）
+- Never modify a promotion-destination file without user approval
+- Never apply multiple Instincts in a single approval (confirm one at a time)
+- Never manually rewrite an instinct file's confidence or evidence (that's the observer's job)
