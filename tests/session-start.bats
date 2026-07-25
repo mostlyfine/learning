@@ -53,7 +53,7 @@ run_hook() {
   run_hook "$(hook_input "$PROJECT")"
   [ "$status" -eq 0 ]
   [[ "$output" == *"<learning-preflight>"* ]]
-  [[ "$output" == *"昇格資格のある Instinct: 1 件"* ]]
+  [[ "$output" == *"Promotion-eligible Instincts: 1"* ]]
 }
 
 @test "昇格資格0件・approaching1件: 出力なし" {
@@ -67,8 +67,8 @@ run_hook() {
   make_instinct ready-one active 0.8
   make_instinct almost active 0.55
   run_hook "$(hook_input "$PROJECT")"
-  [[ "$output" == *"昇格資格のある Instinct: 1 件"* ]]
-  [[ "$output" == *"あと一歩（confidence 0.5〜0.69）: 1 件"* ]]
+  [[ "$output" == *"Promotion-eligible Instincts: 1"* ]]
+  [[ "$output" == *"Almost there (confidence 0.5-0.69): 1"* ]]
 }
 
 @test "status: promoted は対象外" {
@@ -155,5 +155,5 @@ EOF
   mkdir -p "$WT/.claude"
   run_hook "$(hook_input "$WT")"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"昇格資格のある Instinct: 1 件"* ]]
+  [[ "$output" == *"Promotion-eligible Instincts: 1"* ]]
 }

@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
-# bin/ スクリプト共有ライブラリ
+# Shared library for bin/ scripts
 
-# 観察に使える分析エンジンの一覧（検証と案内メッセージの単一ソース）
+# List of analysis engines available for observation (single source for validation and guidance messages)
 readonly VALID_ENGINES="claude codex copilot"
 
-# 呼び出し元スクリプトのディレクトリから plugin root（1階層上）を解決する
+# Resolve the plugin root (one level up) from the calling script's directory
 resolve_plugin_root() {
   (cd "$1/.." && pwd)
 }
 
-# git worktree からのセッションはメイン作業ツリーに集約する（worktree ごとに
-# .learning が分散すると confidence が育たず、worktree 削除で学習データが消える）
+# Sessions from a git worktree are aggregated into the main worktree (if .learning
+# were scattered per worktree, confidence would never grow, and learning data
+# would be lost when the worktree is removed)
 resolve_project_root() {
   local cwd="$1" common_dir
   common_dir=$(git -C "$cwd" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
@@ -21,8 +22,8 @@ resolve_project_root() {
   fi
 }
 
-# key=value 形式の設定ファイルから値を読む（ファイル欠落・行なしは空）。
-# 同一 key が複数あれば最後の値を採る
+# Read a value from a key=value config file (empty if the file or the line is missing).
+# If the same key appears multiple times, the last value wins
 read_config_value() {
   [ -f "$1" ] || return 0
   sed -n "s/^$2=//p" "$1" | tail -1
@@ -35,16 +36,16 @@ is_valid_engine() {
   esac
 }
 
-# 必須外部コマンドの有無を確認する。無ければ stderr に警告を出す
-# （呼び出し元が stdout/stderr をログファイルへリダイレクトしていれば自動的に記録される）
+# Check whether a required external command is available; warn on stderr if not
+# (automatically captured if the caller redirects stdout/stderr to a log file)
 check_required_command() {
   command -v "$1" >/dev/null 2>&1 && return 0
   echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] required command not found: $1" >&2
   return 1
 }
 
-# エンジン設定不備の案内行（タイムスタンプ付き）を stdout に出す。
-# $1 が空なら未設定、非空なら不正値として扱う
+# Print a timestamped guidance line for an engine misconfiguration to stdout.
+# Empty $1 is treated as "not configured", non-empty as "invalid value"
 log_engine_guidance() {
   local ts
   ts=$(date -u '+%Y-%m-%dT%H:%M:%SZ')

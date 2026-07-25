@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# SessionStart hook: 昇格資格のある Instinct 件数をセッション開始時に案内する。
-# LLM を使わない軽量スキャンのみ（frontmatter を読むだけ）。学習系の失敗は
-# セッション開始を妨げてはならないため、常に exit 0 する。
+# SessionStart hook: announce the count of promotion-eligible Instincts at session start.
+# Lightweight scan only, no LLM involved (just reads frontmatter). Learning-related
+# failures must never block session start, so this always exits 0.
 set -u
 
-# $1: instinct ファイル, $2: frontmatter のキー名
+# $1: instinct file, $2: frontmatter key name
 frontmatter_value() {
   awk -v key="^$2:" '
     /^---$/ { c++; next }
@@ -28,7 +28,7 @@ main() {
   data_dir="$project_root/.learning"
   instincts_dir="$data_dir/instincts"
 
-  # 未設定・未蓄積のプロジェクトでは毎セッション nag しない
+  # Don't nag every session on projects with no config or no accumulated instincts
   [ -f "$data_dir/config" ] || return 0
   [ -d "$instincts_dir" ] || return 0
 
@@ -50,8 +50,8 @@ main() {
 
   {
     echo "<learning-preflight>"
-    echo "昇格資格のある Instinct: ${ready} 件（/learning:acquire で確認できます）"
-    [ "$approaching" -gt 0 ] && echo "あと一歩（confidence 0.5〜0.69）: ${approaching} 件"
+    echo "Promotion-eligible Instincts: ${ready} (check with /learning:acquire)"
+    [ "$approaching" -gt 0 ] && echo "Almost there (confidence 0.5-0.69): ${approaching}"
     echo "</learning-preflight>"
   }
   return 0

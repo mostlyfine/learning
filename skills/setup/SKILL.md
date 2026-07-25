@@ -1,25 +1,25 @@
 ---
 name: setup
-description: 学習プラグインが観察に使う分析エンジン（claude / codex / copilot）の初回セットアップと再設定を行う。「learning のセットアップ」「観察エンジンを変更したい」、observer ログに unknown engine が出たときの修復、および status / acquire からの委譲で実行する。
+description: Runs first-time setup and reconfiguration of the analysis engine (claude / codex / copilot) the learning plugin uses for observation. Use for "set up learning," "I want to change the observation engine," fixing an "unknown engine" seen in the observer log, and delegation from status / acquire.
 allowed-tools: Read, Glob, Grep, AskUserQuestion, Write(.learning/config), Write(.learning/.gitignore), Edit(.learning/config)
 ---
 
-# /learning:setup — 分析エンジンの設定
+# /learning:setup — Configure the analysis engine
 
-セッション観察（observer）に使う分析エンジンを、プロジェクト（cwd）直下の `.learning/config` に保存する。既存の config がある場合は現在値を提示してから上書きする（再設定）。
+Saves the analysis engine used for session observation (the observer) to `.learning/config` under the project (cwd) root. If a config already exists, show its current value before overwriting it (reconfiguration).
 
-## 手順
+## Procedure
 
-1. 選択肢 `claude` / `codex` / `copilot` を提示する（AskUserQuestion ツールが利用可能ならそれを使い、なければ対話で確認する）
-2. 選択に応じて `.learning/config` を書き込む:
-   - claude → `engine=claude` と `model=haiku`
-   - copilot → `engine=copilot` と `model=claude-haiku-4.5`
-   - codex → `engine=codex` のみ（モデルは CLI 既定に任せる）
-3. `.learning/.gitignore` が無ければ内容 `*` で作成する（config を含む `.learning` 全体をリポジトリの追跡対象から外す）
-4. 「保存しました。以降のセッション終了時から観察が有効になります」と伝える。status / acquire から委譲された場合は元の処理を続行する
+1. Present the choices `claude` / `codex` / `copilot` (use the AskUserQuestion tool if available, otherwise confirm conversationally)
+2. Write `.learning/config` based on the selection:
+   - claude → `engine=claude` and `model=haiku`
+   - copilot → `engine=copilot` and `model=claude-haiku-4.5`
+   - codex → `engine=codex` only (leave the model to the CLI default)
+3. If `.learning/.gitignore` doesn't exist, create it with content `*` (excludes all of `.learning`, including the config, from the repository)
+4. Tell the user "Saved. Observation will be active starting from the end of the next session." If this was delegated from status / acquire, continue with the original processing
 
-## 備考
+## Notes
 
-- 設定はプロジェクト単位。学習データと同じ `.learning` に置かれるため、プラグインを更新しても消えない
-- git worktree のセッションでは観察データがメイン作業ツリーの `.learning` に集約されるため、setup もメイン作業ツリーで実行する
-- `engine` に上記以外の文字列があると観察は実行されず、有効値の案内がプロジェクトの `.learning/logs/observer.log` に出る
+- Configuration is per-project. Since it lives in `.learning` alongside the learning data, it survives plugin updates
+- In a git worktree session, observation data is aggregated into the main worktree's `.learning`, so setup should also run from the main worktree
+- Any value of `engine` other than the above prevents observation from running, and guidance on valid values is written to the project's `.learning/logs/observer.log`
