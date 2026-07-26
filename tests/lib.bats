@@ -31,6 +31,15 @@ teardown() { rm -rf "$TMP"; }
   ! is_valid_engine ""
 }
 
+@test "ensure_learning_gitignore は無ければ * で作成し、あれば上書きしない" {
+  source "$BATS_TEST_DIRNAME/../bin/lib.sh"
+  ensure_learning_gitignore "$TMP"
+  [ "$(cat "$TMP/.gitignore")" = "*" ]
+  printf 'custom\n' >"$TMP/.gitignore"
+  ensure_learning_gitignore "$TMP"
+  [ "$(cat "$TMP/.gitignore")" = "custom" ]
+}
+
 @test "log_engine_guidance は空なら未設定案内、不正値なら有効値一覧を出す" {
   source "$BATS_TEST_DIRNAME/../bin/lib.sh"
   run log_engine_guidance ""
@@ -57,13 +66,11 @@ teardown() { rm -rf "$TMP"; }
 }
 
 @test "detect_agent_engine は CLAUDECODE=1 なら claude を返す" {
-  source "$BATS_TEST_DIRNAME/../bin/lib.sh"
   run env CLAUDECODE=1 bash -c '. "'"$BATS_TEST_DIRNAME"'/../bin/lib.sh"; detect_agent_engine'
   [ "$output" = "claude" ]
 }
 
 @test "detect_agent_engine は CLAUDECODE 未設定なら空を返す" {
-  source "$BATS_TEST_DIRNAME/../bin/lib.sh"
   run env -u CLAUDECODE bash -c '. "'"$BATS_TEST_DIRNAME"'/../bin/lib.sh"; detect_agent_engine'
   [ -z "$output" ]
 }

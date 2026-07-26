@@ -4,6 +4,9 @@
 # List of analysis engines available for observation (single source for validation and guidance messages)
 readonly VALID_ENGINES="claude codex copilot"
 
+# Default model for the claude engine (matches skills/setup/SKILL.md's claude mapping)
+readonly DEFAULT_MODEL_CLAUDE="haiku"
+
 # Resolve the plugin root (one level up) from the calling script's directory
 resolve_plugin_root() {
   (cd "$1/.." && pwd)
@@ -34,6 +37,13 @@ is_valid_engine() {
   *" $1 "*) [ -n "$1" ] ;;
   *) return 1 ;;
   esac
+}
+
+# Create .learning/.gitignore (excludes the whole directory from the repo) if it
+# doesn't already exist. Shared by observe.sh and session-end.sh, both of which
+# may be the first to see a fresh .learning directory.
+ensure_learning_gitignore() {
+  [ -f "$1/.gitignore" ] || echo '*' >"$1/.gitignore"
 }
 
 # Check whether a required external command is available; warn on stderr if not

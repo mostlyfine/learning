@@ -34,7 +34,7 @@ check_required_command "$engine" || exit 0
 
 instincts_dir="$data_dir/instincts"
 mkdir -p "$instincts_dir"
-[ -f "$data_dir/.gitignore" ] || echo '*' >"$data_dir/.gitignore"
+ensure_learning_gitignore "$data_dir"
 
 prompt_file="$plugin_root/hooks/prompts/observer.md"
 if [ ! -f "$prompt_file" ]; then

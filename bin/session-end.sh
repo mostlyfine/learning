@@ -72,13 +72,10 @@ main() {
   if [ ! -f "$config_file" ]; then
     local detected
     detected=$(detect_agent_engine)
-    if [ -n "$detected" ]; then
-      mkdir -p "$data_dir"
-      printf 'engine=%s\nmodel=haiku\n' "$detected" >"$config_file"
-      [ -f "$data_dir/.gitignore" ] || echo '*' >"$data_dir/.gitignore"
-    else
-      return 0
-    fi
+    [ -n "$detected" ] || return 0
+    mkdir -p "$data_dir"
+    printf 'engine=%s\nmodel=%s\n' "$detected" "$DEFAULT_MODEL_CLAUDE" >"$config_file"
+    ensure_learning_gitignore "$data_dir"
   fi
   engine=$(read_config_value "$config_file" engine)
   if ! is_valid_engine "$engine"; then
