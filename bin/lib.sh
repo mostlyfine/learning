@@ -4,6 +4,9 @@
 # List of analysis engines available for observation (single source for validation and guidance messages)
 readonly VALID_ENGINES="claude codex copilot"
 
+# Default model for the claude engine (matches skills/setup/SKILL.md's claude mapping)
+readonly DEFAULT_MODEL_CLAUDE="haiku"
+
 # Resolve the plugin root (one level up) from the calling script's directory
 resolve_plugin_root() {
   (cd "$1/.." && pwd)
@@ -36,12 +39,29 @@ is_valid_engine() {
   esac
 }
 
+# Create .learning/.gitignore (excludes the whole directory from the repo) if it
+# doesn't already exist. Shared by observe.sh and session-end.sh, both of which
+# may be the first to see a fresh .learning directory.
+ensure_learning_gitignore() {
+  [ -f "$1/.gitignore" ] || echo '*' >"$1/.gitignore"
+}
+
 # Check whether a required external command is available; warn on stderr if not
 # (automatically captured if the caller redirects stdout/stderr to a log file)
 check_required_command() {
   command -v "$1" >/dev/null 2>&1 && return 0
   echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] required command not found: $1" >&2
   return 1
+}
+
+# Detect which engine to default to based on the host agent, when a reliable signal
+# exists. Currently only Claude Code identifies itself reliably (CLAUDECODE=1); other
+# platforms (Codex CLI, GitHub Copilot CLI, Cursor, VS Code) don't yet expose one.
+# Echoes the engine name, or nothing if no reliable signal is available.
+detect_agent_engine() {
+  if [ "${CLAUDECODE:-}" = "1" ]; then
+    echo "claude"
+  fi
 }
 
 # Print a timestamped guidance line for an engine misconfiguration to stdout.

@@ -79,7 +79,7 @@ Runtime data (Instincts, logs, locks) lives under the project root in `.learning
 
 ## Engine configuration
 
-The analysis engine used for observation is asked once per project, the first time, and saved to `.learning/config` under the project root (applied automatically after that; it survives plugin updates). Setup runs the first time `/learning:status` or `/learning:acquire` is run, and session observation doesn't work until then.
+The analysis engine used for observation is asked once per project, the first time, and saved to `.learning/config` under the project root (applied automatically after that; it survives plugin updates). Setup runs the first time `/learning:status` or `/learning:acquire` is run, and session observation doesn't work until then. On Claude Code specifically, this step is skipped: the SessionEnd/Stop hook detects the `CLAUDECODE` environment variable and auto-creates the config (`engine=claude`, `model=haiku`) on the first eligible session, so observation starts without ever running `/learning:setup`. Other platforms don't yet expose a reliable way to detect themselves, so they still require the manual first-run setup.
 
 | Engine | Default model | Invocation |
 |---|---|---|
