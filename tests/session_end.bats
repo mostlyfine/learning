@@ -18,6 +18,8 @@ STUB
   chmod +x "$BIN/session-end.sh" "$BIN/observe.sh"
   export LEARNING_SKILLS_SYNC=1
   unset LEARNING_SKILLS_OBSERVER 2>/dev/null || true
+  # ホストのCLAUDECODEから隔離し、エージェント自動判別のテストでのみ明示的に export する
+  unset CLAUDECODE 2>/dev/null || true
 }
 
 teardown() { rm -rf "$TMP"; }
@@ -251,6 +253,27 @@ STUB
   run_hook "$(hook_input "$t" "$PROJECT")"
   [ "$status" -eq 0 ]
   [ ! -f "$PLUGIN/observe-invoked.txt" ]
+}
+
+@test "CLAUDECODE=1: config が無くても自動判別して engine=claude で起動する" {
+  t=$(make_transcript 12)
+  rm -f "$DATA/config"
+  export CLAUDECODE=1
+  run_hook "$(hook_input "$t" "$PROJECT")"
+  [ "$status" -eq 0 ]
+  [ -f "$PLUGIN/observe-invoked.txt" ]
+  grep -q "^engine=claude$" "$DATA/config"
+  grep -q "^model=haiku$" "$DATA/config"
+}
+
+@test "CLAUDECODE=1 でも既存の config は上書きしない" {
+  t=$(make_transcript 12)
+  printf 'engine=codex\n' >"$DATA/config"
+  export CLAUDECODE=1
+  run_hook "$(hook_input "$t" "$PROJECT")"
+  [ "$status" -eq 0 ]
+  grep -q "^engine=codex$" "$DATA/config"
+  ! grep -q "engine=claude" "$DATA/config"
 }
 
 @test "unknown engine: analyzed.tsv に記録せず起動もせず、案内が observer.log に残る" {

@@ -55,3 +55,15 @@ teardown() { rm -rf "$TMP"; }
   [ "$status" -eq 1 ]
   [[ "$output" == *"required command not found: no-such-command-xyz"* ]]
 }
+
+@test "detect_agent_engine は CLAUDECODE=1 なら claude を返す" {
+  source "$BATS_TEST_DIRNAME/../bin/lib.sh"
+  run env CLAUDECODE=1 bash -c '. "'"$BATS_TEST_DIRNAME"'/../bin/lib.sh"; detect_agent_engine'
+  [ "$output" = "claude" ]
+}
+
+@test "detect_agent_engine は CLAUDECODE 未設定なら空を返す" {
+  source "$BATS_TEST_DIRNAME/../bin/lib.sh"
+  run env -u CLAUDECODE bash -c '. "'"$BATS_TEST_DIRNAME"'/../bin/lib.sh"; detect_agent_engine'
+  [ -z "$output" ]
+}

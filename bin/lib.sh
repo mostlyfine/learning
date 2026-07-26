@@ -44,6 +44,16 @@ check_required_command() {
   return 1
 }
 
+# Detect which engine to default to based on the host agent, when a reliable signal
+# exists. Currently only Claude Code identifies itself reliably (CLAUDECODE=1); other
+# platforms (Codex CLI, GitHub Copilot CLI, Cursor, VS Code) don't yet expose one.
+# Echoes the engine name, or nothing if no reliable signal is available.
+detect_agent_engine() {
+  if [ "${CLAUDECODE:-}" = "1" ]; then
+    echo "claude"
+  fi
+}
+
 # Print a timestamped guidance line for an engine misconfiguration to stdout.
 # Empty $1 is treated as "not configured", non-empty as "invalid value"
 log_engine_guidance() {
