@@ -58,29 +58,15 @@ main() {
   state_file="$data_dir/analyzed.tsv"
   now=$(date +%s)
 
-  # If there's no config yet, try to auto-configure from a reliable host-agent
-  # signal (currently only Claude Code) so observation works without ever running
-  # /learning:setup manually. If no such signal exists, do nothing as before —
-  # config is otherwise created by /learning:setup. Never overwrite a config that
-  # already exists (even if empty or invalid), since that may be a deliberate
-  # user/setup choice. If config exists but the engine is empty or invalid, leave
-  # guidance in observer.log and do nothing (both are decided before the
-  # incremental guard, so a missed engine setup doesn't get recorded in
-  # analyzed.tsv and lose a learning opportunity).
-  local config_file engine
-  config_file="$data_dir/config"
-  if [ ! -f "$config_file" ]; then
-    local detected
-    detected=$(detect_agent_engine)
-    [ -n "$detected" ] || return 0
-    mkdir -p "$data_dir"
-    printf 'engine=%s\nmodel=%s\n' "$detected" "$DEFAULT_MODEL_CLAUDE" >"$config_file"
-    ensure_learning_gitignore "$data_dir"
-  fi
-  engine=$(read_config_value "$config_file" engine)
-  if ! is_valid_engine "$engine"; then
+  # The engine is detected fresh on every run (no persisted config); this is decided
+  # before the incremental guard, so a missing engine signal doesn't get recorded in
+  # analyzed.tsv and lose a learning opportunity.
+  local engine
+  engine=$(detect_agent_engine)
+  if [ -z "$engine" ]; then
+    ensure_learning_dir "$data_dir"
     mkdir -p "$data_dir/logs"
-    log_engine_guidance "$engine" >>"$data_dir/logs/observer.log"
+    log_engine_guidance >>"$data_dir/logs/observer.log"
     return 0
   fi
 

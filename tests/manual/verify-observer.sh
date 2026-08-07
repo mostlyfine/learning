@@ -16,8 +16,9 @@ mkdir -p "$project/.claude" "$project/.learning"
 # Reproduce the real layout of <plugin_root>/bin and <plugin_root>/hooks
 cp -R "$repo_root/bin" "$work/bin"
 cp -R "$repo_root/hooks" "$work/hooks"
-# Engine configuration lives in the project's .learning/config
-printf 'engine=claude\nmodel=haiku\n' >"$project/.learning/config"
+# No config file: the engine is auto-detected on every run. CLAUDECODE=1 selects
+# claude with its default model (haiku)
+export CLAUDECODE=1
 
 echo "=== Running observer (engine=claude, model=haiku) ==="
 date +%s >"$project/.learning/.lock"

@@ -20,21 +20,20 @@ data_dir="$project_dir/.learning"
 lock_file="$data_dir/.lock"
 trap 'rm -f "$lock_file"' EXIT
 
-# Engine and model are read from the project's .learning/config (created by /learning:setup).
-# Validate first so a misconfiguration leaves no side effects from directory creation
-# or prompt processing
-config_file="$data_dir/config"
-engine=$(read_config_value "$config_file" engine)
-model=$(read_config_value "$config_file" model)
-if ! is_valid_engine "$engine"; then
-  log_engine_guidance "$engine"
+# Engine and model are detected fresh on every run (no persisted config). Detect
+# first so a missing signal leaves no side effects from directory creation or
+# prompt processing
+engine=$(detect_agent_engine)
+if [ -z "$engine" ]; then
+  log_engine_guidance
   exit 0
 fi
+model=$(resolve_model_for_engine "$engine")
 check_required_command "$engine" || exit 0
 
 instincts_dir="$data_dir/instincts"
+ensure_learning_dir "$data_dir"
 mkdir -p "$instincts_dir"
-ensure_learning_gitignore "$data_dir"
 
 prompt_file="$plugin_root/hooks/prompts/observer.md"
 if [ ! -f "$prompt_file" ]; then
@@ -50,8 +49,8 @@ prompt="${prompt//\{\{SESSION_ID\}\}/$session_id}"
 
 cd "$project_dir" || exit 0
 # ${model:+...} is intentionally left unquoted (the whole argument disappears when empty).
-# The per-engine default models are also documented in skills/setup/SKILL.md's
-# procedure and the README's engine table (keep all three in sync when changing)
+# The per-engine default models are also documented in lib.sh's default_model_for_engine
+# and the README's engine table (keep all three in sync when changing)
 case "$engine" in
   claude)
     # A Write(path) rule doesn't match the file-permission check (an Edit(path) rule
@@ -68,9 +67,9 @@ case "$engine" in
       --allow-tool 'write(.learning/instincts/**)' --no-ask-user -s
     ;;
   *)
-    # Unreachable after is_valid_engine passes; a safety net to catch drift
-    # between VALID_ENGINES and the case arms
-    log_engine_guidance "$engine"
+    # Unreachable after detect_agent_engine passes; a safety net to catch drift
+    # between detect_agent_engine and the case arms
+    log_engine_guidance
     exit 0
     ;;
 esac || echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] observer failed: transcript=$transcript_path"

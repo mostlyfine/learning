@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
 # Shared library for bin/ scripts
 
-# List of analysis engines available for observation (single source for validation and guidance messages)
-readonly VALID_ENGINES="claude codex copilot"
-
-# Default model for the claude engine (matches skills/setup/SKILL.md's claude mapping)
+# Default models per engine, used when LEARNING_SKILLS_MODEL isn't set
 readonly DEFAULT_MODEL_CLAUDE="haiku"
+readonly DEFAULT_MODEL_COPILOT="claude-haiku-4.5"
 
 # Resolve the plugin root (one level up) from the calling script's directory
 resolve_plugin_root() {
@@ -25,25 +23,18 @@ resolve_project_root() {
   fi
 }
 
-# Read a value from a key=value config file (empty if the file or the line is missing).
-# If the same key appears multiple times, the last value wins
-read_config_value() {
-  [ -f "$1" ] || return 0
-  sed -n "s/^$2=//p" "$1" | tail -1
-}
-
-is_valid_engine() {
-  case " $VALID_ENGINES " in
-  *" $1 "*) [ -n "$1" ] ;;
-  *) return 1 ;;
-  esac
-}
-
 # Create .learning/.gitignore (excludes the whole directory from the repo) if it
-# doesn't already exist. Shared by observe.sh and session-end.sh, both of which
-# may be the first to see a fresh .learning directory.
+# doesn't already exist.
 ensure_learning_gitignore() {
   [ -f "$1/.gitignore" ] || echo '*' >"$1/.gitignore"
+}
+
+# Ensure the .learning data directory and its .gitignore exist. Shared by
+# observe.sh, session-end.sh, and the status/acquire skills (via
+# bin/ensure-learning-dir.sh), any of which may be the first to see a fresh project.
+ensure_learning_dir() {
+  mkdir -p "$1"
+  ensure_learning_gitignore "$1"
 }
 
 # Check whether a required external command is available; warn on stderr if not
@@ -54,24 +45,45 @@ check_required_command() {
   return 1
 }
 
-# Detect which engine to default to based on the host agent, when a reliable signal
-# exists. Currently only Claude Code identifies itself reliably (CLAUDECODE=1); other
-# platforms (Codex CLI, GitHub Copilot CLI, Cursor, VS Code) don't yet expose one.
-# Echoes the engine name, or nothing if no reliable signal is available.
+# Detect which engine to use for observation. Priority: (a) a reliable host-agent
+# signal (CLAUDECODE=1) -> claude, (b) the copilot CLI on PATH -> copilot,
+# (c) the codex CLI on PATH -> codex. Echoes the engine name, or nothing if none
+# of the above are available.
 detect_agent_engine() {
   if [ "${CLAUDECODE:-}" = "1" ]; then
     echo "claude"
+    return 0
+  fi
+  if command -v copilot >/dev/null 2>&1; then
+    echo "copilot"
+    return 0
+  fi
+  if command -v codex >/dev/null 2>&1; then
+    echo "codex"
+    return 0
   fi
 }
 
-# Print a timestamped guidance line for an engine misconfiguration to stdout.
-# Empty $1 is treated as "not configured", non-empty as "invalid value"
-log_engine_guidance() {
-  local ts
-  ts=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
-  if [ -z "$1" ]; then
-    echo "[$ts] engine not configured; run /learning:setup to set up"
+# Echo the default model for an engine (empty if the engine has no default,
+# e.g. codex which defers to the CLI's own default)
+default_model_for_engine() {
+  case "$1" in
+  claude) echo "$DEFAULT_MODEL_CLAUDE" ;;
+  copilot) echo "$DEFAULT_MODEL_COPILOT" ;;
+  esac
+}
+
+# Resolve the model to use for an engine: LEARNING_SKILLS_MODEL overrides the
+# engine's default when set
+resolve_model_for_engine() {
+  if [ -n "${LEARNING_SKILLS_MODEL:-}" ]; then
+    echo "$LEARNING_SKILLS_MODEL"
   else
-    echo "[$ts] unknown engine: $1 (valid: ${VALID_ENGINES// /, }); run /learning:setup to fix the config"
+    default_model_for_engine "$1"
   fi
+}
+
+# Print a timestamped guidance line to stdout when no supported engine was detected
+log_engine_guidance() {
+  echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] no supported engine detected (checked: CLAUDECODE env, copilot/codex on PATH); observation skipped"
 }

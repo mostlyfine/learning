@@ -1,16 +1,16 @@
 ---
 name: acquire
 description: Promotion review of accumulated Instincts (approve/reject/hold). Triggered by "promote the instincts."
-allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git rev-parse:*), SlashCommand(/learning:setup), Skill(learning:setup), Edit(.learning/instincts/**), Edit(.claude/rules/**), Edit(.claude/skills/**), Edit(.claude/agents/**), Edit(CLAUDE.md), Write(.claude/rules/**), Write(.claude/skills/**), Write(.claude/agents/**)
+allowed-tools: Read, Glob, Grep, AskUserQuestion, Bash(git rev-parse:*), Bash(${CLAUDE_PLUGIN_ROOT}/bin/ensure-learning-dir.sh:*), Edit(.learning/instincts/**), Edit(.claude/rules/**), Edit(.claude/skills/**), Edit(.claude/agents/**), Edit(CLAUDE.md), Write(.claude/rules/**), Write(.claude/skills/**), Write(.claude/agents/**)
 ---
 
 # /learning:acquire — Instinct promotion proposals
 
 Promotes accumulated Instincts (`.learning/instincts/*.md`) that have reached the confidence threshold, with user approval.
 
-## Delegating to first-time setup (only when the engine isn't configured)
+## Ensuring the data directory exists
 
-If `.learning/config` doesn't exist at the project root (the same location as the Instincts; inside a worktree this is the main worktree, per "Assumptions" below), run `/learning:setup` (via the SlashCommand tool; if that can't be resolved, launch `learning:setup` via the Skill tool) and then continue with the normal processing.
+Before collecting Instincts, run `${CLAUDE_PLUGIN_ROOT}/bin/ensure-learning-dir.sh <project_root>` via the Bash tool (`<project_root>` per "Assumptions" below) to make sure `.learning/` and its `.gitignore` exist, then continue with normal processing. The analysis engine itself is auto-detected by the observer on every run; there's no separate engine setup to check for here.
 
 ## Assumptions
 
