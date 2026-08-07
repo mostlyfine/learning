@@ -7,8 +7,6 @@ setup() {
   PROJECT="$TMP/project"
   DATA="$PROJECT/.learning"
   mkdir -p "$PROJECT/.claude" "$DATA"
-  # エンジン設定はプロジェクト側の .learning/config
-  printf 'engine=claude\n' >"$DATA/config"
   cp "$BATS_TEST_DIRNAME/../bin/session-end.sh" "$BIN/session-end.sh"
   # observe.sh スタブ: 呼び出し引数をプラグインルートに記録するだけ
   cat >"$BIN/observe.sh" <<'STUB'
@@ -18,8 +16,9 @@ STUB
   chmod +x "$BIN/session-end.sh" "$BIN/observe.sh"
   export LEARNING_SKILLS_SYNC=1
   unset LEARNING_SKILLS_OBSERVER 2>/dev/null || true
-  # ホストのCLAUDECODEから隔離し、エージェント自動判別のテストでのみ明示的に export する
-  unset CLAUDECODE 2>/dev/null || true
+  # config は廃止済み。デフォルトでは CLAUDECODE=1 を立てて自動判定させ、
+  # フォールバック検出のテストでのみ明示的に unset する
+  export CLAUDECODE=1
 }
 
 teardown() { rm -rf "$TMP"; }
@@ -217,9 +216,8 @@ STUB
 
 @test "AGENTS.md のみのプロジェクトでも起動する" {
   t=$(make_transcript 12)
-  mkdir -p "$TMP/agents-proj/.learning"
+  mkdir -p "$TMP/agents-proj"
   touch "$TMP/agents-proj/AGENTS.md"
-  printf 'engine=claude\n' >"$TMP/agents-proj/.learning/config"
   run_hook "$(hook_input "$t" "$TMP/agents-proj")"
   [ -f "$PLUGIN/observe-invoked.txt" ]
 }
@@ -247,64 +245,44 @@ STUB
   [ -f "$DATA/.lock" ]
 }
 
-@test "エンジン設定（config）が無ければ起動しない" {
+@test "CLAUDECODE=1: エンジンが自動判定されて起動する" {
   t=$(make_transcript 12)
-  rm -f "$DATA/config"
-  run_hook "$(hook_input "$t" "$PROJECT")"
-  [ "$status" -eq 0 ]
-  [ ! -f "$PLUGIN/observe-invoked.txt" ]
-}
-
-@test "CLAUDECODE=1: config が無くても自動判別して engine=claude で起動する" {
-  t=$(make_transcript 12)
-  rm -f "$DATA/config"
-  export CLAUDECODE=1
   run_hook "$(hook_input "$t" "$PROJECT")"
   [ "$status" -eq 0 ]
   [ -f "$PLUGIN/observe-invoked.txt" ]
-  grep -q "^engine=claude$" "$DATA/config"
-  grep -q "^model=haiku$" "$DATA/config"
 }
 
-@test "CLAUDECODE=1 でも既存の config は上書きしない" {
+@test "エンジンを検出できなければ起動せず observer.log に案内が残る" {
   t=$(make_transcript 12)
-  printf 'engine=codex\n' >"$DATA/config"
-  export CLAUDECODE=1
-  run_hook "$(hook_input "$t" "$PROJECT")"
-  [ "$status" -eq 0 ]
-  grep -q "^engine=codex$" "$DATA/config"
-  ! grep -q "engine=claude" "$DATA/config"
-}
-
-@test "unknown engine: analyzed.tsv に記録せず起動もせず、案内が observer.log に残る" {
-  t=$(make_transcript 12)
-  printf 'engine=typo\n' >"$DATA/config"
-  run_hook "$(hook_input "$t" "$PROJECT")"
+  isolate_jq_only
+  run bash -c 'unset CLAUDECODE; export PATH="'"$TMP"'/isolated-bin:/usr/bin:/bin"; printf "%s" "$1" | "$2"' \
+    _ "$(hook_input "$t" "$PROJECT")" "$BIN/session-end.sh"
   [ "$status" -eq 0 ]
   [ ! -f "$PLUGIN/observe-invoked.txt" ]
   [ ! -f "$DATA/analyzed.tsv" ]
-  grep -q "unknown engine: typo" "$DATA/logs/observer.log"
-  grep -q "/learning:setup" "$DATA/logs/observer.log"
+  grep -q "no supported engine detected" "$DATA/logs/observer.log"
 }
 
-@test "unknown engine のセッションは設定修正後に分析される（学習機会を失わない）" {
+@test "copilot が PATH にあれば CLAUDECODE 未設定でも起動する" {
   t=$(make_transcript 12)
-  printf 'engine=typo\n' >"$DATA/config"
-  run_hook "$(hook_input "$t" "$PROJECT")"
-  [ ! -f "$PLUGIN/observe-invoked.txt" ]
-  printf 'engine=claude\n' >"$DATA/config"
-  run_hook "$(hook_input "$t" "$PROJECT")"
+  isolate_jq_only
+  printf '#!/usr/bin/env bash\n' >"$TMP/isolated-bin/copilot"
+  chmod +x "$TMP/isolated-bin/copilot"
+  run bash -c 'unset CLAUDECODE; export PATH="'"$TMP"'/isolated-bin:/usr/bin:/bin"; printf "%s" "$1" | "$2"' \
+    _ "$(hook_input "$t" "$PROJECT")" "$BIN/session-end.sh"
+  [ "$status" -eq 0 ]
   [ -f "$PLUGIN/observe-invoked.txt" ]
 }
 
-@test "config の engine 行が空でも起動せず未設定の案内が残る" {
+@test "codex が PATH にあれば CLAUDECODE も copilot も無くても起動する" {
   t=$(make_transcript 12)
-  printf 'model=haiku\n' >"$DATA/config"
-  run_hook "$(hook_input "$t" "$PROJECT")"
+  isolate_jq_only
+  printf '#!/usr/bin/env bash\n' >"$TMP/isolated-bin/codex"
+  chmod +x "$TMP/isolated-bin/codex"
+  run bash -c 'unset CLAUDECODE; export PATH="'"$TMP"'/isolated-bin:/usr/bin:/bin"; printf "%s" "$1" | "$2"' \
+    _ "$(hook_input "$t" "$PROJECT")" "$BIN/session-end.sh"
   [ "$status" -eq 0 ]
-  [ ! -f "$PLUGIN/observe-invoked.txt" ]
-  [ ! -f "$DATA/analyzed.tsv" ]
-  grep -q "engine not configured" "$DATA/logs/observer.log"
+  [ -f "$PLUGIN/observe-invoked.txt" ]
 }
 
 @test "lib.sh が欠落していても exit 0 で観察を諦める" {

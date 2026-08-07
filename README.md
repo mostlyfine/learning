@@ -74,11 +74,17 @@ Runtime data (Instincts, logs, locks) lives under the project root in `.learning
 - Accumulation is automatic (analysis runs at the end of any session with 10+ turns)
 - `/learning:status` — list Instincts and check promotion eligibility / how close they are (confidence 0.5-0.69)
 - `/learning:acquire` — approve / reject / hold each promotion proposal, one at a time
-- `/learning:setup` — configure or reconfigure the analysis engine (delegated to automatically from status / acquire on first use)
+- The analysis engine is detected automatically on every run — no manual setup command is needed
 
 ## Engine configuration
 
-The analysis engine used for observation is asked once per project, the first time, and saved to `.learning/config` under the project root (applied automatically after that; it survives plugin updates). Setup runs the first time `/learning:status` or `/learning:acquire` is run, and session observation doesn't work until then. On Claude Code specifically, this step is skipped: the SessionEnd/Stop hook detects the `CLAUDECODE` environment variable and auto-creates the config (`engine=claude`, `model=haiku`) on the first eligible session, so observation starts without ever running `/learning:setup`. Other platforms don't yet expose a reliable way to detect themselves, so they still require the manual first-run setup.
+There's no config file: the analysis engine is detected fresh every time observation runs (at session end, and whenever `/learning:status` or `/learning:acquire` ensures the data directory exists). Detection follows this priority:
+
+1. `CLAUDECODE=1` (Claude Code's own signal) → `engine=claude`, model `haiku`
+2. the `copilot` CLI found on `PATH` → `engine=copilot`, model `claude-haiku-4.5`
+3. the `codex` CLI found on `PATH` → `engine=codex` (model left to the CLI default)
+
+If none of these are found, observation is skipped and guidance is written to `.learning/logs/observer.log`.
 
 | Engine | Default model | Invocation |
 |---|---|---|
@@ -86,20 +92,14 @@ The analysis engine used for observation is asked once per project, the first ti
 | `codex` | CLI default | `codex exec --sandbox workspace-write` |
 | `copilot` | `claude-haiku-4.5` | `copilot -p --no-ask-user` |
 
-In environments where the command isn't available (e.g. Cursor's manual hook registration), create `.learning/config` by hand under the project root:
-
-```
-engine=claude
-model=haiku
-```
-
-Any value of `engine` other than the above prevents observation from running, and guidance listing the valid engines is written to `.learning/logs/observer.log` (reconfigure with `/learning:setup`).
+In environments where none of these CLIs are on the hook/skill's `PATH` (e.g. Cursor's manual hook registration), install the CLI for whichever engine you want to use and make sure it's reachable from the hook's environment.
 
 ## Configuration (environment variables)
 
 | Variable | Default | Meaning |
 |---|---|---|
 | `LEARNING_SKILLS_MIN_TURNS` | `10` | Minimum turn count for a session to be analyzed; also doubles as the turn-increment threshold required for re-analysis |
+| `LEARNING_SKILLS_MODEL` | (engine's default) | Overrides the auto-detected engine's default model |
 
 ## Development
 

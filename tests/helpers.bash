@@ -10,3 +10,11 @@ setup_plugin_scaffold() {
   mkdir -p "$BIN"
   cp "$BATS_TEST_DIRNAME/../bin/lib.sh" "$BIN/lib.sh"
 }
+
+# jq だけを含む隔離された PATH 用ディレクトリを $TMP/isolated-bin に作る。
+# jq の実体が置かれたディレクトリを丸ごと PATH に含めると、同じディレクトリに
+# 実在する copilot/codex まで誤検出してしまうため、jq だけをシムとして孤立させる。
+isolate_jq_only() {
+  mkdir -p "$TMP/isolated-bin"
+  ln -s "$(command -v jq)" "$TMP/isolated-bin/jq"
+}
