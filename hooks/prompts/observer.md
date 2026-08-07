@@ -10,10 +10,11 @@ You are the observer for an AI coding agent session. Analyze the session transcr
 ## Procedure
 
 1. Read the transcript with Read (if large, split it across offset/limit calls to read it in full)
-2. Extract patterns that fall into these three categories:
+2. Extract patterns that fall into these four categories:
    - `correction`: a moment where the user corrected Claude's behavior or approach (instructions like "no, not that," "use X instead," "stop doing Y," and the adaptation that followed)
    - `error-solution`: a concrete path from an error to its resolution that could plausibly recur in the future (errors rooted in environment, toolchain, or project-specific configuration/constraints). A one-off bug fix whose cause is identifiable just by reading the code doesn't qualify — that knowledge disappears along with the fixed code
    - `workflow`: a recurring, formulaic multi-step procedure within the session
+   - `insight`: a project-specific fact or understanding of specifications/design that is neither a correction, an error-solution, nor a workflow (e.g. why an architecture decision was made, a non-obvious constraint, or how a subsystem actually behaves)
 3. Read every existing `.md` file in `{{INSTINCTS_DIR}}`
 4. Match each extracted candidate against existing Instincts semantically (judge by "is this the same lesson," not by filename or wording matches):
    - If a `status: active` entry captures the same lesson, reinforce it. However, if `# Evidence` already records session id `{{SESSION_ID}}`, do nothing (this prevents double-counting from re-analyzing the same session). When reinforcing, add +0.2 to frontmatter `confidence` (capped at 1.0), +1 to `evidence_count`, update `updated` to `{{TODAY}}`, and append a one-line observation to `# Evidence`
@@ -28,7 +29,7 @@ Filename is `<id>.md` (id is a lowercase English kebab-case string describing th
 ```markdown
 ---
 id: <id>
-type: <correction | error-solution | workflow>
+type: <correction | error-solution | workflow | insight>
 status: active
 confidence: 0.3
 evidence_count: 1
@@ -52,6 +53,7 @@ Guidelines for inferring `promote_to`:
 - an error resolved while working on an existing skill (under the project's `.claude/skills/`) → `instructions`
 - a recurring multi-step procedure → `skill`
 - a specialized task that could be delegated as an independent role → `agent`
+- a project-specific fact or design/spec understanding (`insight`) → `instructions` in most cases (append to `CLAUDE.md`), unless it's scoped enough to fit as a `rules` entry
 
 ## Language
 
