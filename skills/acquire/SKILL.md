@@ -15,7 +15,7 @@ Before collecting Instincts, run `${CLAUDE_PLUGIN_ROOT}/bin/ensure-learning-dir.
 ## Assumptions
 
 - Instinct location: `.learning/instincts/` under the project root. In a git worktree session, however, data is aggregated into the main worktree, so the project root is the parent directory of the path returned by `git rev-parse --path-format=absolute --git-common-dir` (editing files on the main-tree side may trigger a confirmation prompt — that's expected)
-- Instinct file frontmatter: `id`, `type`(correction|error-solution|workflow), `status`(active|promoted|rejected), `confidence`, `evidence_count`, `promote_to`(rules|instructions|skill|agent), `created`, `updated`
+- Instinct file frontmatter: `id`, `type`(correction|error-solution|workflow|insight), `status`(active|promoted|rejected), `confidence`, `evidence_count`, `promote_to`(rules|instructions|skill|agent), `created`, `updated`
 - Promotion eligibility: `status: active` and `confidence >= 0.7`
 - If the instincts directory doesn't exist or is empty, report "No Instincts have been accumulated yet. They'll build up automatically over more sessions" and stop
 
