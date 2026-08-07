@@ -59,11 +59,11 @@ Install via `/plugin install`. If the plugin hook doesn't get registered, merge 
 
 | Platform | Event | Hook definition |
 |---|---|---|
-| Claude Code | `SessionStart` / `SessionEnd` / `Stop` | `hooks/hooks.json` |
-| VS Code | `SessionStart` / `Stop` | `hooks/hooks.json` (auto-detects the Claude format) |
-| Codex CLI | `SessionStart` / `Stop` | `hooks/hooks.json` (requires trust approval) |
-| Copilot CLI | `agentStop` | root `hooks.json` (Copilot format; SessionStart equivalent planned) |
-| Cursor | `stop` | `hooks/configs/cursor-hooks.json` (manual registration; SessionStart equivalent planned) |
+| Claude Code | `SessionEnd` / `Stop` | `hooks/hooks.json` |
+| VS Code | `Stop` | `hooks/hooks.json` (auto-detects the Claude format) |
+| Codex CLI | `Stop` | `hooks/hooks.json` (requires trust approval) |
+| Copilot CLI | `agentStop` | root `hooks.json` (Copilot format) |
+| Cursor | `stop` | `hooks/configs/cursor-hooks.json` (manual registration) |
 
 To dogfood this repository itself, load this directory as a plugin for a single session with `claude --plugin-dir .`.
 
@@ -72,7 +72,6 @@ Runtime data (Instincts, logs, locks) lives under the project root in `.learning
 ## Usage
 
 - Accumulation is automatic (analysis runs at the end of any session with 10+ turns)
-- If one or more Instincts are promotion-eligible, the count is announced automatically at session start (Claude Code / VS Code / Codex CLI; zero eligible means no output, and no LLM is used)
 - `/learning:status` — list Instincts and check promotion eligibility / how close they are (confidence 0.5-0.69)
 - `/learning:acquire` — approve / reject / hold each promotion proposal, one at a time
 - `/learning:setup` — configure or reconfigure the analysis engine (delegated to automatically from status / acquire on first use)
