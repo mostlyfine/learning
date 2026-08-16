@@ -80,9 +80,10 @@ Runtime data (Instincts, logs, locks) lives under the project root in `.learning
 
 There's no config file: the analysis engine is detected fresh every time observation runs (at session end, and whenever `/learning:status` or `/learning:acquire` ensures the data directory exists). Detection follows this priority:
 
-1. `CLAUDECODE=1` (Claude Code's own signal) → `engine=claude`, model `haiku`
-2. the `copilot` CLI found on `PATH` → `engine=copilot`, model `claude-haiku-4.5`
-3. the `codex` CLI found on `PATH` → `engine=codex` (model left to the CLI default)
+1. `LEARNING_SKILLS_ENGINE` set to `claude`, `codex`, or `copilot` → that engine, overriding everything below; any other value is ignored
+2. `CLAUDECODE=1` (Claude Code's own signal) → `engine=claude`, model `haiku`
+3. the `copilot` CLI found on `PATH` → `engine=copilot`, model `claude-haiku-4.5`
+4. the `codex` CLI found on `PATH` → `engine=codex` (model left to the CLI default)
 
 If none of these are found, observation is skipped and guidance is written to `.learning/logs/observer.log`.
 
@@ -99,6 +100,7 @@ In environments where none of these CLIs are on the hook/skill's `PATH` (e.g. Cu
 | Variable | Default | Meaning |
 |---|---|---|
 | `LEARNING_SKILLS_MIN_TURNS` | `10` | Minimum turn count for a session to be analyzed; also doubles as the turn-increment threshold required for re-analysis |
+| `LEARNING_SKILLS_ENGINE` | (auto-detected) | Overrides auto-detection; must be `claude`, `codex`, or `copilot`, otherwise ignored |
 | `LEARNING_SKILLS_MODEL` | (engine's default) | Overrides the auto-detected engine's default model |
 
 ## Development
