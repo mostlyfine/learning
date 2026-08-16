@@ -45,11 +45,17 @@ check_required_command() {
   return 1
 }
 
-# Detect which engine to use for observation. Priority: (a) a reliable host-agent
-# signal (CLAUDECODE=1) -> claude, (b) the copilot CLI on PATH -> copilot,
-# (c) the codex CLI on PATH -> codex. Echoes the engine name, or nothing if none
-# of the above are available.
+# Detect which engine to use for observation. Priority: (a) LEARNING_SKILLS_ENGINE
+# if set to a supported value, (b) a reliable host-agent signal (CLAUDECODE=1) ->
+# claude, (c) the copilot CLI on PATH -> copilot, (d) the codex CLI on PATH ->
+# codex. Echoes the engine name, or nothing if none of the above are available.
 detect_agent_engine() {
+  case "${LEARNING_SKILLS_ENGINE:-}" in
+  claude | codex | copilot)
+    echo "$LEARNING_SKILLS_ENGINE"
+    return 0
+    ;;
+  esac
   if [ "${CLAUDECODE:-}" = "1" ]; then
     echo "claude"
     return 0

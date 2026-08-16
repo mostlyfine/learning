@@ -93,6 +93,28 @@ teardown() { rm -rf "$TMP"; }
   [ -z "$output" ]
 }
 
+@test "detect_agent_engine は LEARNING_SKILLS_ENGINE=codex なら CLAUDECODE=1 や copilot/codex の PATH 存在より優先する" {
+  mkdir -p "$TMP/bin"
+  for c in copilot codex; do
+    printf '#!/usr/bin/env bash\n' >"$TMP/bin/$c"
+    chmod +x "$TMP/bin/$c"
+  done
+  run env CLAUDECODE=1 LEARNING_SKILLS_ENGINE=codex bash -c 'PATH="'"$TMP"'/bin"; . "'"$BATS_TEST_DIRNAME"'/../bin/lib.sh"; detect_agent_engine'
+  [ "$output" = "codex" ]
+}
+
+@test "detect_agent_engine は LEARNING_SKILLS_ENGINE=copilot / claude でもそれぞれ優先する" {
+  run env -u CLAUDECODE LEARNING_SKILLS_ENGINE=copilot bash -c 'PATH=""; . "'"$BATS_TEST_DIRNAME"'/../bin/lib.sh"; detect_agent_engine'
+  [ "$output" = "copilot" ]
+  run env -u CLAUDECODE LEARNING_SKILLS_ENGINE=claude bash -c 'PATH=""; . "'"$BATS_TEST_DIRNAME"'/../bin/lib.sh"; detect_agent_engine'
+  [ "$output" = "claude" ]
+}
+
+@test "detect_agent_engine は LEARNING_SKILLS_ENGINE が未対応値なら無視して自動検出にフォールバックする" {
+  run env CLAUDECODE=1 LEARNING_SKILLS_ENGINE=bogus bash -c '. "'"$BATS_TEST_DIRNAME"'/../bin/lib.sh"; detect_agent_engine'
+  [ "$output" = "claude" ]
+}
+
 @test "default_model_for_engine はエンジンごとの既定モデルを返す（codexは空）" {
   source "$BATS_TEST_DIRNAME/../bin/lib.sh"
   [ "$(default_model_for_engine claude)" = "haiku" ]
